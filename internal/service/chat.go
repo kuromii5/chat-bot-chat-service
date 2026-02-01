@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres/message"
@@ -14,15 +13,12 @@ import (
 type CreateMessageReq struct {
 	UserID  uuid.UUID
 	Content string
+	Role    domain.Role
+	Tags    []string
 }
 
 func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
 	if err := validator.Validate(req); err != nil {
-		return nil, err
-	}
-
-	role, err := s.messageRepo.GetUserRole(ctx, req.UserID)
-	if err != nil {
 		return nil, err
 	}
 
@@ -31,31 +27,31 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 		return nil, err
 	}
 
-	switch role {
-	case "Human":
+	switch req.Role {
+	case domain.Human:
 		if err := message.ValidateHumanMsg(lastMsgs); err != nil {
 			return nil, err
 		}
-	case "AI":
+	case domain.AI:
 		if err := message.ValidateAIMsg(lastMsgs); err != nil {
 			return nil, err
 		}
 	default:
-		return nil, errors.New("unknown role access denied")
+		return nil, errors.New("unknown role: access denied")
 	}
 
-	msg := &domain.Message{
-		ID:         uuid.New(),
+	msg, err := s.messageRepo.Save(ctx, &domain.Message{
 		SenderID:   req.UserID,
-		SenderRole: role,
+		SenderRole: req.Role,
 		RoomID:     "global",
 		Content:    req.Content,
-		CreatedAt:  time.Now(),
-	}
-
-	if err := s.messageRepo.Save(ctx, msg); err != nil {
+		Tags:       req.Tags,
+	})
+	if err != nil {
 		return nil, err
 	}
+
+	// TODO: publish message to rabbitmq
 
 	return msg, nil
 }

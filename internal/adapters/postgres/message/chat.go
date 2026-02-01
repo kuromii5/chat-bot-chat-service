@@ -1,16 +1,8 @@
 package message
 
 import (
-	"context"
-
-	"github.com/google/uuid"
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
-
-func (r *Repository) GetUserRole(ctx context.Context, userID uuid.UUID) (string, error) {
-	var role string
-	return role, r.db.GetContext(ctx, &role, getUserRoleQuery, userID)
-}
 
 func ValidateHumanMsg(lastMessages []*domain.Message) error {
 	if len(lastMessages) < 3 {
@@ -19,7 +11,7 @@ func ValidateHumanMsg(lastMessages []*domain.Message) error {
 
 	humanCount := 0
 	for i := range 3 {
-		if lastMessages[i].SenderRole == "Human" {
+		if lastMessages[i].SenderRole == domain.Human {
 			humanCount++
 		} else {
 			return nil
@@ -38,7 +30,7 @@ func ValidateAIMsg(lastMessages []*domain.Message) error {
 	}
 
 	lastMsg := lastMessages[0]
-	if lastMsg.SenderRole == "AI" {
+	if lastMsg.SenderRole == domain.AI {
 		return domain.ErrAIDoublePost
 	}
 

@@ -6,33 +6,20 @@ import (
 	"github.com/google/uuid"
 )
 
+type Role string
+
+const (
+	AI    Role = "AI"
+	Human Role = "Human"
+)
+
 type Message struct {
-	ID         uuid.UUID
-	SenderID   uuid.UUID
-	SenderRole string
-	RoomID     string
-	Content    string
-	CreatedAt  time.Time
-}
-
-func CanUserSendMessage(lastMessages []*Message) bool {
-	if len(lastMessages) < 3 {
-		return true
-	}
-
-	humanCounter := 0
-	for _, msg := range lastMessages {
-		if msg.SenderRole == "AI" {
-			return true
-		}
-		if msg.SenderRole == "Human" {
-			humanCounter++
-		}
-
-		if humanCounter >= 3 {
-			return false
-		}
-	}
-
-	return true
+	ID         uuid.UUID  `db:"id"`
+	SenderID   uuid.UUID  `db:"sender_id"`
+	SenderRole Role       `db:"sender_role"`
+	RoomID     string     `db:"room_id"`
+	Content    string     `db:"content"`
+	Tags       []string   `db:"tags"`
+	CreatedAt  time.Time  `db:"created_at"`
+	AssignedTo *uuid.UUID `db:"assigned_to"`
 }

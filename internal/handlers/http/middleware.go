@@ -19,6 +19,7 @@ var (
 type contextKey string
 
 const UserIDKey contextKey = "userID"
+const UserRoleKey contextKey = "userRole"
 
 func Auth(jwtManager *jwt.JWTManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -41,7 +42,9 @@ func Auth(jwtManager *jwt.JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserIDKey, claims.UserID)))
+			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
