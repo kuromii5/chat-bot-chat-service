@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kuromii5/chat-bot-auth-service/pkg/jwt"
+	"github.com/kuromii5/chat-bot-chat-service/pkg/jwt"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
 
@@ -21,7 +21,7 @@ type contextKey string
 const UserIDKey contextKey = "userID"
 const UserRoleKey contextKey = "userRole"
 
-func Auth(jwtManager *jwt.JWTManager) func(http.Handler) http.Handler {
+func Auth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -36,7 +36,7 @@ func Auth(jwtManager *jwt.JWTManager) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := jwtManager.Verify(parts[1])
+			claims, err := jwt.Verify(parts[1], jwtSecret)
 			if err != nil {
 				wrapper.WrapError(w, r, ErrInvalidOrExpiredToken)
 				return

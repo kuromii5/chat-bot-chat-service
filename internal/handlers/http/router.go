@@ -6,10 +6,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/kuromii5/chat-bot-auth-service/pkg/jwt"
 )
 
-func NewRouter(chatHandler *Handler, jwtManager *jwt.JWTManager) http.Handler {
+func NewRouter(chatHandler *Handler, jwtSecret string) http.Handler {
 	r := chi.NewRouter()
 	r.Use(
 		middleware.RequestID,
@@ -20,7 +19,7 @@ func NewRouter(chatHandler *Handler, jwtManager *jwt.JWTManager) http.Handler {
 	)
 
 	r.Route("/api/v1/chat", func(r chi.Router) {
-		r.Use(Auth(jwtManager))
+		r.Use(Auth(jwtSecret))
 
 		r.Route("/profile", func(r chi.Router) {
 			r.Route("/tags", func(r chi.Router) {

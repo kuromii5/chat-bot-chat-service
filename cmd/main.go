@@ -8,7 +8,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kuromii5/chat-bot-auth-service/pkg/jwt"
 	"github.com/kuromii5/chat-bot-chat-service/config"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
@@ -40,8 +39,7 @@ func main() {
 	chatService := service.NewService(pg, pg, rmq)
 	chatHandler := httpHandlers.NewHandler(chatService)
 
-	jwtManager := jwt.NewJWTManager(cfg.JWT.Secret, cfg.JWT.AccessTokenExpiry, cfg.JWT.RefreshTokenExpiry)
-	router := httpHandlers.NewRouter(chatHandler, jwtManager)
+	router := httpHandlers.NewRouter(chatHandler, cfg.JWT.Secret)
 	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 	if err := server.Start(); err != nil {
 		logrus.WithError(err).Fatal("Failed to start server")
