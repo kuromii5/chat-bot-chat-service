@@ -1,5 +1,6 @@
-package message
+package postgres
 
+// message queries
 const (
 	saveMessageQuery = `
 		INSERT INTO core.messages (sender_id, sender_role, room_id, content, tags)
@@ -18,5 +19,23 @@ const (
 	`
 	getMessageAssigneeQuery = `
 		SELECT assigned_to FROM core.messages WHERE id = $1
+	`
+)
+
+// tag queries
+const (
+	getTagsQuery = `
+		SELECT name FROM core.tags
+	`
+	deleteProfileTagsQuery = `
+		DELETE FROM core.profile_tags WHERE user_id = $1
+	`
+	insertProfileTagsQuery = `
+		INSERT INTO core.profile_tags (user_id, tag_name)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id, tag_name) DO NOTHING
+	`
+	getProfileTagsQuery = `
+		SELECT tag_name FROM core.profile_tags WHERE user_id = $1
 	`
 )

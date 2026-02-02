@@ -1,4 +1,4 @@
-package message
+package postgres
 
 import (
 	"context"
@@ -10,23 +10,23 @@ import (
 	"github.com/lib/pq"
 )
 
-func (r *Repository) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
+func (pg *Postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
 	var message domain.Message
-	return &message, r.db.GetContext(ctx, &message, saveMessageQuery, msg.SenderID, msg.SenderRole, msg.RoomID, msg.Content, pq.Array(msg.Tags))
+	return &message, pg.DB.GetContext(ctx, &message, saveMessageQuery, msg.SenderID, msg.SenderRole, msg.RoomID, msg.Content, pq.Array(msg.Tags))
 }
 
-func (r *Repository) GetLastMessages(ctx context.Context, roomID string, limit int) ([]*domain.Message, error) {
+func (pg *Postgres) GetLastMessages(ctx context.Context, roomID string, limit int) ([]*domain.Message, error) {
 	var messages []*domain.Message
 
-	err := r.db.SelectContext(ctx, &messages, getLastMessagesQuery, roomID, limit)
+	err := pg.DB.SelectContext(ctx, &messages, getLastMessagesQuery, roomID, limit)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	return messages, nil
 }
 
-func (r *Repository) ClaimMessage(ctx context.Context, messageID uuid.UUID, aiID uuid.UUID) error {
-	tx, err := r.db.BeginTxx(ctx, nil)
+func (pg *Postgres) ClaimMessage(ctx context.Context, messageID uuid.UUID, aiID uuid.UUID) error {
+	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}

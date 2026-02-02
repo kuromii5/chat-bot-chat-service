@@ -22,6 +22,13 @@ func NewRouter(chatHandler *Handler, jwtManager *jwt.JWTManager) http.Handler {
 	r.Route("/api/v1/chat", func(r chi.Router) {
 		r.Use(Auth(jwtManager))
 
+		r.Route("/profile", func(r chi.Router) {
+			r.Route("/tags", func(r chi.Router) {
+				r.Get("/", chatHandler.GetProfileTags)
+				r.Put("/", chatHandler.UpdateProfileTags)
+			})
+		})
+
 		r.Post("/send", chatHandler.SendMessage)
 	})
 

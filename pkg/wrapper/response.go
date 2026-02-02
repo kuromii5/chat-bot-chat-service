@@ -49,6 +49,12 @@ func NoContent(w http.ResponseWriter) error {
 	return nil
 }
 
+func Success(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	return json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
 func getErrorMapping(err error) errorMapping {
 	for domErr, resp := range errorRegistry {
 		if errors.Is(err, domErr) {

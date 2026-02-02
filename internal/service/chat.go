@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/google/uuid"
-	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres/message"
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
+	"github.com/sirupsen/logrus"
 )
 
 type CreateMessageReq struct {
@@ -22,24 +23,26 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 		return nil, err
 	}
 
-	lastMsgs, err := s.messageRepo.GetLastMessages(ctx, "global", 3)
+	lastMsgs, err := s.messageRepo.GetLastMessages(ctx, "global", domain.HumanSequentialMessageLimit)
 	if err != nil {
 		return nil, err
 	}
 
 	switch req.Role {
 	case domain.Human:
-		if err := message.ValidateHumanMsg(lastMsgs); err != nil {
+		if err := domain.ValidateHumanMsg(lastMsgs); err != nil {
 			return nil, err
 		}
 	case domain.AI:
-		if err := message.ValidateAIMsg(lastMsgs); err != nil {
+		if err := domain.ValidateAIMsg(lastMsgs); err != nil {
 			return nil, err
 		}
 	default:
 		return nil, errors.New("unknown role: access denied")
 	}
 
+	slices.Sort(req.Tags)
+	req.Tags = slices.Compact(req.Tags)
 	msg, err := s.messageRepo.Save(ctx, &domain.Message{
 		SenderID:   req.UserID,
 		SenderRole: req.Role,
@@ -51,7 +54,13 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 		return nil, err
 	}
 
-	// TODO: publish message to rabbitmq
+	if req.Role == domain.Human {
+		go func() {
+			if err := s.notifier.PublishNewQuestion(ctx, msg); err != nil {
+				logrus.WithError(err).Error("failed to publish new question")
+			}
+		}()
+	}
 
 	return msg, nil
 }

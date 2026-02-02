@@ -24,4 +24,20 @@ var errorRegistry = map[error]ErrorResponse{
 		Status:  http.StatusTooManyRequests,
 		Message: "Please wait for an AI response before sending more messages",
 	},
+	domain.ErrInvalidTags: {
+		Status:  http.StatusBadRequest,
+		Message: "Invalid tags",
+	},
+	domain.ErrAccessDenied: {
+		Status:  http.StatusForbidden,
+		Message: "Access denied",
+	},
+	domain.ErrAICannotStart: {
+		Status:  http.StatusBadRequest,
+		Message: "AI cannot start the conversation",
+	},
+	domain.ErrAIDoublePost: {
+		Status:  http.StatusBadRequest,
+		Message: "AI can only send one message at a time",
+	},
 }

@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Log      LogConfig
+	RabbitMQ RabbitMQConfig
 }
 
 type ServerConfig struct {
@@ -38,6 +39,11 @@ type JWTConfig struct {
 
 type LogConfig struct {
 	Level string
+}
+
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
 }
 
 func Load() (*Config, error) {
@@ -75,6 +81,10 @@ func Load() (*Config, error) {
 		},
 		Log: LogConfig{
 			Level: viper.GetString("LOG_LEVEL"),
+		},
+		RabbitMQ: RabbitMQConfig{
+			URL:      viper.GetString("RABBITMQ_URL"),
+			Exchange: viper.GetString("RABBITMQ_EXCHANGE"),
 		},
 	}
 	return cfg, nil

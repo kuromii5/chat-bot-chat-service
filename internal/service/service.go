@@ -6,10 +6,14 @@ import (
 
 type Service struct {
 	messageRepo ports.MessageRepository
+	tagRepo     ports.TagRepository
+	notifier    ports.MessageNotifier
 }
 
-func NewService(messageRepo ports.MessageRepository) *Service {
+func NewService(messageRepo ports.MessageRepository, tagRepo ports.TagRepository, notifier ports.MessageNotifier) *Service {
 	return &Service{
 		messageRepo: messageRepo,
+		tagRepo:     tagRepo,
+		notifier:    notifier,
 	}
 }
