@@ -1,9 +1,6 @@
 package config
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -32,9 +29,7 @@ type DatabaseConfig struct {
 }
 
 type JWTConfig struct {
-	Secret             string
-	AccessTokenExpiry  time.Duration
-	RefreshTokenExpiry time.Duration
+	Secret string
 }
 
 type LogConfig struct {
@@ -51,16 +46,6 @@ func Load() (*Config, error) {
 
 	viper.AutomaticEnv()
 
-	accessExpiry, err := time.ParseDuration(viper.GetString("JWT_ACCESS_TOKEN_EXPIRY"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid JWT_ACCESS_TOKEN_EXPIRY: %w", err)
-	}
-
-	refreshExpiry, err := time.ParseDuration(viper.GetString("JWT_REFRESH_TOKEN_EXPIRY"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid JWT_REFRESH_TOKEN_EXPIRY: %w", err)
-	}
-
 	cfg := &Config{
 		Server: ServerConfig{
 			Host: viper.GetString("SERVER_HOST"),
@@ -75,9 +60,7 @@ func Load() (*Config, error) {
 			SSLMode:  viper.GetString("DB_SSLMODE"),
 		},
 		JWT: JWTConfig{
-			Secret:             viper.GetString("JWT_SECRET"),
-			AccessTokenExpiry:  accessExpiry,
-			RefreshTokenExpiry: refreshExpiry,
+			Secret: viper.GetString("JWT_SECRET"),
 		},
 		Log: LogConfig{
 			Level: viper.GetString("LOG_LEVEL"),
