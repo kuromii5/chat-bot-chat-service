@@ -40,4 +40,16 @@ var errorRegistry = map[error]ErrorResponse{
 		Status:  http.StatusBadRequest,
 		Message: "AI can only send one message at a time",
 	},
+	domain.ErrAuthorizationHeaderRequired: {
+		Status:  http.StatusUnauthorized,
+		Message: "Authorization header is required",
+	},
+	domain.ErrInvalidAuthorizationFormat: {
+		Status:  http.StatusUnauthorized,
+		Message: "Invalid authorization format",
+	},
+	domain.ErrInvalidOrExpiredToken: {
+		Status:  http.StatusUnauthorized,
+		Message: "Invalid or expired token",
+	},
 }
