@@ -14,6 +14,6 @@ type MessageRepository interface {
 
 type TagRepository interface {
 	AreTagsValid(ctx context.Context, tags []string) bool
-	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error
-	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
+	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error)
+	GetProfileTags(ctx context.Context, userID uuid.UUID) (tags []string, err error)
 }

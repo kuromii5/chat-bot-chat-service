@@ -16,11 +16,7 @@ func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) 
 		return err
 	}
 
-	routingKey := "question.general"
-	if len(msg.Tags) > 0 {
-		routingKey = fmt.Sprintf("question.%s", strings.Join(msg.Tags, "."))
-	}
-
+	routingKey := fmt.Sprintf("question.%s", strings.Join(msg.Tags, "."))
 	return r.channel.PublishWithContext(ctx,
 		r.config.Exchange,
 		routingKey,

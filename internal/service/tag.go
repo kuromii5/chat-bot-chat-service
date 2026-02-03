@@ -15,11 +15,12 @@ func (s *Service) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags 
 	slices.Sort(tags)
 	tags = slices.Compact(tags)
 
-	if err := s.tagRepo.UpdateProfileTags(ctx, userID, tags); err != nil {
+	oldTags, err := s.tagRepo.UpdateProfileTags(ctx, userID, tags)
+	if err != nil {
 		return err
 	}
 
-	if err := s.notifier.SetupAIQueue(ctx, userID, tags); err != nil {
+	if err := s.notifier.SyncAIQueue(ctx, userID, tags, oldTags); err != nil {
 		return err
 	}
 

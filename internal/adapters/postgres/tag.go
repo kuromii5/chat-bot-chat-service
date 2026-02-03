@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -24,34 +23,26 @@ func (pg *Postgres) AreTagsValid(ctx context.Context, tags []string) bool {
 	return true
 }
 
-func (pg *Postgres) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error {
+func (pg *Postgres) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error) {
 	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, deleteProfileTagsQuery, userID)
-	if err != nil {
-		return fmt.Errorf("failed to clear old tags: %w", err)
+	if err := tx.SelectContext(ctx, &oldTags, deleteProfileTagsQuery, userID); err != nil {
+		return nil, err
 	}
-
-	stmt, err := tx.PrepareContext(ctx, insertProfileTagsQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
 
 	for _, tag := range tags {
-		if _, err := stmt.ExecContext(ctx, userID, tag); err != nil {
-			return fmt.Errorf("failed to insert tag %s: %w", tag, err)
+		if _, err := tx.ExecContext(ctx, insertProfileTagsQuery, userID, tag); err != nil {
+			return nil, err
 		}
 	}
 
-	return tx.Commit()
+	return oldTags, tx.Commit()
 }
 
-func (pg *Postgres) GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	var tags []string
+func (pg *Postgres) GetProfileTags(ctx context.Context, userID uuid.UUID) (tags []string, err error) {
 	return tags, pg.DB.SelectContext(ctx, &tags, getProfileTagsQuery, userID)
 }

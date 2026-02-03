@@ -9,5 +9,5 @@ import (
 
 type MessageNotifier interface {
 	PublishNewQuestion(ctx context.Context, msg *domain.Message) error
-	SetupAIQueue(ctx context.Context, userID uuid.UUID, tags []string) error
+	SyncAIQueue(ctx context.Context, userID uuid.UUID, tags, oldTags []string) error
 }
