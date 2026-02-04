@@ -9,11 +9,11 @@ import (
 )
 
 func (s *Service) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error {
+	slices.Sort(tags)
+	tags = slices.Compact(tags)
 	if !s.tagRepo.AreTagsValid(ctx, tags) {
 		return domain.ErrInvalidTags
 	}
-	slices.Sort(tags)
-	tags = slices.Compact(tags)
 
 	oldTags, err := s.tagRepo.UpdateProfileTags(ctx, userID, tags)
 	if err != nil {

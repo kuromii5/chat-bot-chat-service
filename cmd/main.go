@@ -38,8 +38,9 @@ func main() {
 
 	chatService := service.NewService(pg, pg, rmq)
 	chatHandler := httpHandlers.NewHandler(chatService)
+	notificationHandler := httpHandlers.NewNotificationHandler(rmq)
 
-	router := httpHandlers.NewRouter(chatHandler, cfg.JWT.Secret)
+	router := httpHandlers.NewRouter(chatHandler, notificationHandler, cfg.JWT.Secret)
 	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 	if err := server.Start(); err != nil {
 		logrus.WithError(err).Fatal("Failed to start server")

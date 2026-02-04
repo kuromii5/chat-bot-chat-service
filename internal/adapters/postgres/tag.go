@@ -7,10 +7,6 @@ import (
 )
 
 func (pg *Postgres) AreTagsValid(ctx context.Context, tags []string) bool {
-	if len(tags) == 0 {
-		return true
-	}
-
 	pg.tagMu.RLock()
 	defer pg.tagMu.RUnlock()
 
