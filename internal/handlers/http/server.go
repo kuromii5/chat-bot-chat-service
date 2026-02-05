@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -30,22 +27,14 @@ func NewServer(host, port string, router http.Handler) *Server {
 	}
 }
 
-func (s *Server) Start() error {
-	go func() {
-		logrus.Infof("server address: %s", s.httpServer.Addr)
-		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.WithError(err).Fatal("Server failed to start")
-		}
-	}()
-	return nil
+func (s *Server) Addr() string {
+	return s.httpServer.Addr
 }
 
-func (s *Server) WaitAndShutdown(ctx context.Context) {
-	<-ctx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (s *Server) Start() error {
+	return s.httpServer.ListenAndServe()
+}
 
-	if err := s.httpServer.Shutdown(ctx); err != nil {
-		log.WithError(err).Fatal("Server forced to shutdown")
-	}
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }

@@ -57,11 +57,16 @@ func New(cfg config.RabbitMQConfig) (*RabbitMQ, error) {
 	}, nil
 }
 
-func (r *RabbitMQ) Close() {
+func (r *RabbitMQ) Close() error {
 	if r.channel != nil {
-		r.channel.Close()
+		if err := r.channel.Close(); err != nil {
+			return err
+		}
 	}
 	if r.conn != nil {
-		r.conn.Close()
+		if err := r.conn.Close(); err != nil {
+			return err
+		}
 	}
+	return nil
 }

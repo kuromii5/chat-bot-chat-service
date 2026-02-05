@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -28,13 +29,11 @@ func main() {
 	if err != nil {
 		logrus.Fatal("Failed to connect to database", err)
 	}
-	defer pg.DB.Close()
 
 	rmq, err := rabbitmq.New(cfg.RabbitMQ)
 	if err != nil {
 		logrus.Fatal("Failed to connect to rabbitmq", err)
 	}
-	defer rmq.Close()
 
 	chatService := service.NewService(pg, pg, rmq)
 	chatHandler := httpHandlers.NewHandler(chatService)
@@ -42,11 +41,40 @@ func main() {
 
 	router := httpHandlers.NewRouter(chatHandler, notificationHandler, cfg.JWT.Secret)
 	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
-	if err := server.Start(); err != nil {
+
+	errChan := make(chan error)
+	go func() {
+		logrus.Infof("server address: %s", server.Addr())
+		if err := server.Start(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case err := <-errChan:
 		logrus.WithError(err).Fatal("Failed to start server")
+		pg.DB.Close()
+		rmq.Close()
+		os.Exit(1)
+	case <-ctx.Done():
+		logrus.Info("Server shutdown...")
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer shutdownCancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logrus.WithError(err).Error("HTTP server shutdown failed, forcing close")
+		}
+
+		if err := pg.DB.Close(); err != nil {
+			logrus.WithError(err).Error("Database close failed")
+		}
+		if err := rmq.Close(); err != nil {
+			logrus.WithError(err).Error("RabbitMQ close failed")
+		}
 	}
 
-	server.WaitAndShutdown(ctx)
+	logrus.Info("Service shutdown successfully")
 }
 
 func setupLogger(level string) {
