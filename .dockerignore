@@ -1,13 +1,6 @@
 .git
 .gitignore
-.idea
-.vscode
-
-*.exe
-auth-service
-chat-service
-
-*.log
 .env
 
-*_test.go
+*.exe
+*.log
