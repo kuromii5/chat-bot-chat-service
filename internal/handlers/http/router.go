@@ -18,23 +18,21 @@ func NewRouter(chatHandler *Handler, notificationHandler *NotificationHandler, j
 	)
 
 	r.Group(func(r chi.Router) {
-		r.Use(Auth(jwtSecret))
-		r.Get("/ws", notificationHandler.HandleWS)
-	})
-
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.Timeout(30 * time.Second))
 		r.Route("/api/v1/chat", func(r chi.Router) {
 			r.Use(Auth(jwtSecret))
+			r.Get("/ws", notificationHandler.HandleWS)
 
-			r.Route("/profile", func(r chi.Router) {
-				r.Route("/tags", func(r chi.Router) {
-					r.Get("/", chatHandler.GetProfileTags)
-					r.Put("/", chatHandler.UpdateProfileTags)
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.Timeout(30 * time.Second))
+				r.Route("/profile", func(r chi.Router) {
+					r.Route("/tags", func(r chi.Router) {
+						r.Get("/", chatHandler.GetProfileTags)
+						r.Put("/", chatHandler.UpdateProfileTags)
+					})
 				})
-			})
 
-			r.Post("/send", chatHandler.SendMessage)
+				r.Post("/send", chatHandler.SendMessage)
+			})
 		})
 	})
 
