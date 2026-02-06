@@ -40,6 +40,7 @@ func main() {
 	notificationHandler := httpHandlers.NewNotificationHandler(rmq)
 
 	router := httpHandlers.NewRouter(chatHandler, notificationHandler, cfg.JWT.Secret)
+	httpHandlers.InitMetrics(cfg.Metrics.Port)
 	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 
 	errChan := make(chan error)

@@ -12,6 +12,11 @@ type Config struct {
 	JWT      JWTConfig
 	Log      LogConfig
 	RabbitMQ RabbitMQConfig
+	Metrics  MetricsConfig
+}
+
+type MetricsConfig struct {
+	Port string
 }
 
 type ServerConfig struct {
@@ -68,6 +73,9 @@ func Load() (*Config, error) {
 		RabbitMQ: RabbitMQConfig{
 			URL:      viper.GetString("RABBITMQ_URL"),
 			Exchange: viper.GetString("RABBITMQ_EXCHANGE"),
+		},
+		Metrics: MetricsConfig{
+			Port: viper.GetString("METRICS_PORT"),
 		},
 	}
 	return cfg, nil
