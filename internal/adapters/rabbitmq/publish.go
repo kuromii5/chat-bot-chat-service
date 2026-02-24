@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
-	"github.com/kuromii5/chat-bot-chat-service/internal/ports"
 )
 
 func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) error {
@@ -40,7 +39,7 @@ func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) 
 func (r *RabbitMQ) Listen(
 	ctx context.Context,
 	userID uuid.UUID,
-	handler ports.MessageHandler,
+	handler func(ctx context.Context, body []byte) error,
 ) error {
 	queueName := fmt.Sprintf("ai_queue_%s", userID.String())
 

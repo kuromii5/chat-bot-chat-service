@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
-	"github.com/kuromii5/chat-bot-chat-service/internal/ports"
+	"github.com/kuromii5/chat-bot-chat-service/internal/service"
 )
 
 const (
@@ -23,10 +23,10 @@ var upgrader = websocket.Upgrader{
 }
 
 type NotificationHandler struct {
-	notifier ports.MessageNotifier
+	notifier service.MessageNotifier
 }
 
-func NewNotificationHandler(n ports.MessageNotifier) *NotificationHandler {
+func NewNotificationHandler(n service.MessageNotifier) *NotificationHandler {
 	return &NotificationHandler{notifier: n}
 }
 
