@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -13,9 +12,7 @@ import (
 )
 
 type postgres struct {
-	DB       *sqlx.DB
-	tagCache map[string]struct{}
-	tagMu    sync.RWMutex
+	DB *sqlx.DB
 }
 
 func New(cfg config.DatabaseConfig) (*postgres, error) {
@@ -31,12 +28,7 @@ func New(cfg config.DatabaseConfig) (*postgres, error) {
 		return nil, fmt.Errorf("ping: %w", err)
 	}
 
-	pg := &postgres{DB: db, tagCache: make(map[string]struct{}), tagMu: sync.RWMutex{}}
-	if err := pg.initTagCache(ctx); err != nil {
-		return nil, err
-	}
-
-	return pg, nil
+	return &postgres{DB: db}, nil
 }
 
 func DSN(c config.DatabaseConfig) string {
@@ -46,16 +38,12 @@ func DSN(c config.DatabaseConfig) string {
 	)
 }
 
-func (r *postgres) initTagCache(ctx context.Context) error {
+// GetAllTags fetches all available tag names from the database.
+// Used at startup to seed the BadgerDB tag cache.
+func (r *postgres) GetAllTags(ctx context.Context) ([]string, error) {
 	var names []string
 	if err := r.DB.SelectContext(ctx, &names, getTagsQuery); err != nil {
-		return fmt.Errorf("init tag cache: %w", err)
+		return nil, fmt.Errorf("get all tags: %w", err)
 	}
-
-	r.tagCache = make(map[string]struct{}, len(names))
-	for _, name := range names {
-		r.tagCache[name] = struct{}{}
-	}
-
-	return nil
+	return names, nil
 }

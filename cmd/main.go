@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/kuromii5/chat-bot-chat-service/config"
+	badgercache "github.com/kuromii5/chat-bot-chat-service/internal/adapters/badger"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 	httpHandlers "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
@@ -45,12 +46,25 @@ func main() {
 		logrus.Fatal("Failed to connect to database", err)
 	}
 
+	cache, err := badgercache.New()
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to open BadgerDB")
+	}
+
+	allTags, err := pg.GetAllTags(ctx)
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to fetch tags for cache")
+	}
+	if err := cache.LoadTags(ctx, allTags); err != nil {
+		logrus.WithError(err).Fatal("Failed to load tags into BadgerDB")
+	}
+
 	rmq, err := rabbitmq.New(cfg.RabbitMQ)
 	if err != nil {
 		logrus.Fatal("Failed to connect to rabbitmq", err)
 	}
 
-	chatService := service.NewService(pg, pg, rmq)
+	chatService := service.NewService(pg, pg, cache, rmq)
 	chatHandler := httpHandlers.NewHandler(chatService)
 	notificationHandler := httpHandlers.NewNotificationHandler(rmq)
 
@@ -69,6 +83,9 @@ func main() {
 	select {
 	case err := <-errChan:
 		logrus.WithError(err).Error("Failed to start server")
+		if closeErr := cache.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("BadgerDB close failed")
+		}
 		if closeErr := pg.DB.Close(); closeErr != nil {
 			logrus.WithError(closeErr).Error("Database close failed")
 		}
@@ -86,6 +103,9 @@ func main() {
 			logrus.WithError(err).Error("HTTP server shutdown failed, forcing close")
 		}
 
+		if err := cache.Close(); err != nil {
+			logrus.WithError(err).Error("BadgerDB close failed")
+		}
 		if err := pg.DB.Close(); err != nil {
 			logrus.WithError(err).Error("Database close failed")
 		}

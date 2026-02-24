@@ -14,13 +14,16 @@ type MessageRepository interface {
 }
 
 type TagRepository interface {
-	AreTagsValid(ctx context.Context, tags []string) bool
 	UpdateProfileTags(
 		ctx context.Context,
 		userID uuid.UUID,
 		tags []string,
 	) (oldTags []string, err error)
 	GetProfileTags(ctx context.Context, userID uuid.UUID) (tags []string, err error)
+}
+
+type TagCache interface {
+	AreTagsValid(ctx context.Context, tags []string) bool
 }
 
 // MessageHandler is the callback type for consuming messages from the notifier.
@@ -35,17 +38,20 @@ type MessageNotifier interface {
 type Service struct {
 	messageRepo MessageRepository
 	tagRepo     TagRepository
+	tagCache    TagCache
 	notifier    MessageNotifier
 }
 
 func NewService(
 	messageRepo MessageRepository,
 	tagRepo TagRepository,
+	tagCache TagCache,
 	notifier MessageNotifier,
 ) *Service {
 	return &Service{
 		messageRepo: messageRepo,
 		tagRepo:     tagRepo,
+		tagCache:    tagCache,
 		notifier:    notifier,
 	}
 }
