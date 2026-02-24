@@ -12,13 +12,13 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/config"
 )
 
-type Postgres struct {
+type postgres struct {
 	DB       *sqlx.DB
 	tagCache map[string]struct{}
 	tagMu    sync.RWMutex
 }
 
-func New(cfg config.DatabaseConfig) (*Postgres, error) {
+func New(cfg config.DatabaseConfig) (*postgres, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -31,7 +31,7 @@ func New(cfg config.DatabaseConfig) (*Postgres, error) {
 		return nil, fmt.Errorf("ping: %w", err)
 	}
 
-	pg := &Postgres{DB: db, tagCache: make(map[string]struct{}), tagMu: sync.RWMutex{}}
+	pg := &postgres{DB: db, tagCache: make(map[string]struct{}), tagMu: sync.RWMutex{}}
 	if err := pg.initTagCache(ctx); err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func DSN(c config.DatabaseConfig) string {
 	)
 }
 
-func (r *Postgres) initTagCache(ctx context.Context) error {
+func (r *postgres) initTagCache(ctx context.Context) error {
 	var names []string
 	if err := r.DB.SelectContext(ctx, &names, getTagsQuery); err != nil {
 		return fmt.Errorf("init tag cache: %w", err)

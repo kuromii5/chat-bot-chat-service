@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (pg *Postgres) AreTagsValid(ctx context.Context, tags []string) bool {
+func (pg *postgres) AreTagsValid(ctx context.Context, tags []string) bool {
 	pg.tagMu.RLock()
 	defer pg.tagMu.RUnlock()
 
@@ -20,7 +20,7 @@ func (pg *Postgres) AreTagsValid(ctx context.Context, tags []string) bool {
 	return true
 }
 
-func (pg *Postgres) UpdateProfileTags(
+func (pg *postgres) UpdateProfileTags(
 	ctx context.Context,
 	userID uuid.UUID,
 	tags []string,
@@ -48,7 +48,7 @@ func (pg *Postgres) UpdateProfileTags(
 	return oldTags, nil
 }
 
-func (pg *Postgres) GetProfileTags(
+func (pg *postgres) GetProfileTags(
 	ctx context.Context,
 	userID uuid.UUID,
 ) ([]string, error) {

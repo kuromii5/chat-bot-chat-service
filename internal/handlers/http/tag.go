@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
+	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
 
@@ -17,6 +18,10 @@ type updateTagsRequest struct {
 func (h *Handler) UpdateProfileTags(w http.ResponseWriter, r *http.Request) {
 	var req updateTagsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		wrapper.WrapError(w, r, err)
+		return
+	}
+	if err := validator.Validate(req); err != nil {
 		wrapper.WrapError(w, r, err)
 		return
 	}

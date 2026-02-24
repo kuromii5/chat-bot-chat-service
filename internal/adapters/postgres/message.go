@@ -12,7 +12,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
-func (pg *Postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
+func (pg *postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
 	var message domain.Message
 	if err := pg.DB.GetContext(
 		ctx,
@@ -29,7 +29,7 @@ func (pg *Postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Mess
 	return &message, nil
 }
 
-func (pg *Postgres) GetLastMessages(
+func (pg *postgres) GetLastMessages(
 	ctx context.Context,
 	roomID string,
 	limit int,
@@ -43,7 +43,7 @@ func (pg *Postgres) GetLastMessages(
 	return messages, nil
 }
 
-func (pg *Postgres) ClaimMessage(ctx context.Context, messageID uuid.UUID, aiID uuid.UUID) error {
+func (pg *postgres) ClaimMessage(ctx context.Context, messageID uuid.UUID, aiID uuid.UUID) error {
 	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
