@@ -1,4 +1,4 @@
-package service
+package msg
 
 import (
 	"context"
@@ -25,11 +25,7 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 		return nil, fmt.Errorf("validate: %w", err)
 	}
 
-	lastMsgs, err := s.messageRepo.GetLastMessages(
-		ctx,
-		"global",
-		domain.HumanSequentialMessageLimit,
-	)
+	lastMsgs, err := s.repo.GetLastMessages(ctx, "global", domain.HumanSequentialMessageLimit)
 	if err != nil {
 		return nil, fmt.Errorf("get last messages: %w", err)
 	}
@@ -49,7 +45,7 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 
 	slices.Sort(req.Tags)
 	req.Tags = slices.Compact(req.Tags)
-	msg, err := s.messageRepo.Save(ctx, &domain.Message{
+	saved, err := s.repo.Save(ctx, &domain.Message{
 		SenderID:   req.UserID,
 		SenderRole: req.Role,
 		RoomID:     "global",
@@ -62,11 +58,11 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 
 	if req.Role == domain.Human {
 		go func() {
-			if err := s.notifier.PublishNewQuestion(ctx, msg); err != nil {
+			if err := s.notifier.PublishNewQuestion(ctx, saved); err != nil {
 				logrus.WithError(err).Error("failed to publish new question")
 			}
 		}()
 	}
 
-	return msg, nil
+	return saved, nil
 }

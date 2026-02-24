@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
-	"github.com/kuromii5/chat-bot-chat-service/internal/service"
+	msg "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
@@ -17,7 +17,7 @@ type createMessageRequest struct {
 	Tags    []string `json:"tags"    validate:"required,max=5,min=1"`
 }
 
-func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
+func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	var req createMessageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		wrapper.WrapError(w, r, err)
@@ -32,7 +32,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := h.service.SendMessage(r.Context(), service.CreateMessageReq{
+	saved, err := h.svc.SendMessage(r.Context(), msg.CreateMessageReq{
 		UserID:  userID,
 		Content: req.Content,
 		Role:    userRole,
@@ -43,5 +43,5 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wrapper.JSON(w, http.StatusCreated, msg)
+	wrapper.JSON(w, http.StatusCreated, saved)
 }

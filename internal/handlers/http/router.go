@@ -10,7 +10,8 @@ import (
 )
 
 func NewRouter(
-	chatHandler *Handler,
+	msgHandler *MessageHandler,
+	tagHandler *TagHandler,
 	notificationHandler *NotificationHandler,
 	jwtSecret string,
 ) http.Handler {
@@ -32,12 +33,12 @@ func NewRouter(
 				r.Use(middleware.Timeout(30 * time.Second))
 				r.Route("/profile", func(r chi.Router) {
 					r.Route("/tags", func(r chi.Router) {
-						r.Get("/", chatHandler.GetProfileTags)
-						r.Put("/", chatHandler.UpdateProfileTags)
+						r.Get("/", tagHandler.GetProfileTags)
+						r.Put("/", tagHandler.UpdateProfileTags)
 					})
 				})
 
-				r.Post("/send", chatHandler.SendMessage)
+				r.Post("/send", msgHandler.SendMessage)
 			})
 		})
 	})

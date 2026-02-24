@@ -48,7 +48,6 @@ linters:
 formatters:
   enable:
     - goimports
-    - golines
   settings:
     goimports:
       local-prefixes: [ "github.com/kuromii5/chat-bot-chat-service" ]
@@ -61,7 +60,7 @@ run:
   timeout: 5m
   tests: true
   modules-download-mode: readonly
-  go: '1.25'
+  go: '1.26'
 
 severity:
   default: error

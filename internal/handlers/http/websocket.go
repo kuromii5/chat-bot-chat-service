@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-
-	"github.com/kuromii5/chat-bot-chat-service/internal/service"
 )
 
 const (
@@ -22,12 +20,16 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-type NotificationHandler struct {
-	notifier service.MessageNotifier
+type Listener interface {
+	Listen(ctx context.Context, userID uuid.UUID, handler func(ctx context.Context, body []byte) error) error
 }
 
-func NewNotificationHandler(n service.MessageNotifier) *NotificationHandler {
-	return &NotificationHandler{notifier: n}
+type NotificationHandler struct {
+	listener Listener
+}
+
+func NewNotificationHandler(l Listener) *NotificationHandler {
+	return &NotificationHandler{listener: l}
 }
 
 func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +79,7 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	err = h.notifier.Listen(ctx, uid, func(ctx context.Context, body []byte) error {
+	err = h.listener.Listen(ctx, uid, func(ctx context.Context, body []byte) error {
 		_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 		return conn.WriteMessage(websocket.TextMessage, body)
 	})

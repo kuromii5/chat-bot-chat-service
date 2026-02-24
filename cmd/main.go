@@ -14,7 +14,8 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 	httpHandlers "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
-	"github.com/kuromii5/chat-bot-chat-service/internal/service"
+	msgservice "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
+	tagservice "github.com/kuromii5/chat-bot-chat-service/internal/service/tag"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
 )
@@ -64,11 +65,14 @@ func main() {
 		logrus.Fatal("Failed to connect to rabbitmq", err)
 	}
 
-	chatService := service.NewService(pg, pg, cache, rmq)
-	chatHandler := httpHandlers.NewHandler(chatService)
+	msgSvc := msgservice.NewService(pg, rmq)
+	tagSvc := tagservice.NewService(pg, cache, rmq)
+
+	msgHandler := httpHandlers.NewMessageHandler(msgSvc)
+	tagHandler := httpHandlers.NewTagHandler(tagSvc)
 	notificationHandler := httpHandlers.NewNotificationHandler(rmq)
 
-	router := httpHandlers.NewRouter(chatHandler, notificationHandler, cfg.JWT.Secret)
+	router := httpHandlers.NewRouter(msgHandler, tagHandler, notificationHandler, cfg.JWT.Secret)
 	httpHandlers.InitMetrics(cfg.Metrics.Port)
 	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 

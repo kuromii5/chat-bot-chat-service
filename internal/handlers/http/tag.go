@@ -15,7 +15,7 @@ type updateTagsRequest struct {
 	Tags []string `json:"tags" validate:"required,min=1"`
 }
 
-func (h *Handler) UpdateProfileTags(w http.ResponseWriter, r *http.Request) {
+func (h *TagHandler) UpdateProfileTags(w http.ResponseWriter, r *http.Request) {
 	var req updateTagsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		wrapper.WrapError(w, r, err)
@@ -41,7 +41,7 @@ func (h *Handler) UpdateProfileTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.UpdateProfileTags(r.Context(), userID, req.Tags); err != nil {
+	if err := h.svc.UpdateProfileTags(r.Context(), userID, req.Tags); err != nil {
 		wrapper.WrapError(w, r, err)
 		return
 	}
@@ -53,7 +53,7 @@ type getTagsResponse struct {
 	Tags []string `json:"tags"`
 }
 
-func (h *Handler) GetProfileTags(w http.ResponseWriter, r *http.Request) {
+func (h *TagHandler) GetProfileTags(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
 		wrapper.WrapError(w, r, domain.ErrAccessDenied)
@@ -69,7 +69,7 @@ func (h *Handler) GetProfileTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags, err := h.service.GetProfileTags(r.Context(), userID)
+	tags, err := h.svc.GetProfileTags(r.Context(), userID)
 	if err != nil {
 		wrapper.WrapError(w, r, err)
 		return

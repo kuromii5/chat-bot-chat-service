@@ -1,4 +1,4 @@
-package service
+package tag
 
 import (
 	"context"
@@ -13,11 +13,12 @@ import (
 func (s *Service) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error {
 	slices.Sort(tags)
 	tags = slices.Compact(tags)
-	if !s.tagCache.AreTagsValid(ctx, tags) {
+
+	if !s.cache.AreTagsValid(ctx, tags) {
 		return domain.ErrInvalidTags
 	}
 
-	oldTags, err := s.tagRepo.UpdateProfileTags(ctx, userID, tags)
+	oldTags, err := s.repo.UpdateProfileTags(ctx, userID, tags)
 	if err != nil {
 		return fmt.Errorf("update profile tags: %w", err)
 	}
@@ -30,7 +31,7 @@ func (s *Service) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags 
 }
 
 func (s *Service) GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	tags, err := s.tagRepo.GetProfileTags(ctx, userID)
+	tags, err := s.repo.GetProfileTags(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get profile tags: %w", err)
 	}
