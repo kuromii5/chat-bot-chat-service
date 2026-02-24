@@ -9,15 +9,25 @@ import (
 	"github.com/riandyrn/otelchi"
 
 	httpMiddleware "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
-	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
-	taghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/tag"
-	wshandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/ws"
 )
 
+type MessageHandler interface {
+	SendMessage(http.ResponseWriter, *http.Request)
+}
+
+type TagHandler interface {
+	GetProfileTags(http.ResponseWriter, *http.Request)
+	UpdateProfileTags(http.ResponseWriter, *http.Request)
+}
+
+type WSHandler interface {
+	HandleWS(http.ResponseWriter, *http.Request)
+}
+
 func NewRouter(
-	msgH *msghandler.Handler,
-	tagH *taghandler.Handler,
-	wsH *wshandler.Handler,
+	msgH MessageHandler,
+	tagH TagHandler,
+	wsH WSHandler,
 	jwtSecret string,
 ) http.Handler {
 	r := chi.NewRouter()
