@@ -7,19 +7,21 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/ports"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) error {
 	body, err := json.Marshal(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal message: %w", err)
 	}
 
 	routingKey := fmt.Sprintf("question.%s", strings.Join(msg.Tags, "."))
-	return r.channel.PublishWithContext(ctx,
+	if err := r.channel.PublishWithContext(ctx,
 		r.config.Exchange,
 		routingKey,
 		false,
@@ -29,10 +31,17 @@ func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) 
 			DeliveryMode: amqp.Persistent,
 			Body:         body,
 		},
-	)
+	); err != nil {
+		return fmt.Errorf("publish: %w", err)
+	}
+	return nil
 }
 
-func (r *RabbitMQ) Listen(ctx context.Context, userID uuid.UUID, handler ports.MessageHandler) error {
+func (r *RabbitMQ) Listen(
+	ctx context.Context,
+	userID uuid.UUID,
+	handler ports.MessageHandler,
+) error {
 	queueName := fmt.Sprintf("ai_queue_%s", userID.String())
 
 	msgs, err := r.channel.Consume(
@@ -59,9 +68,13 @@ func (r *RabbitMQ) Listen(ctx context.Context, userID uuid.UUID, handler ports.M
 				}
 
 				if err := handler(ctx, d.Body); err == nil {
-					d.Ack(false)
+					if ackErr := d.Ack(false); ackErr != nil {
+						logrus.WithError(ackErr).Error("failed to ack message")
+					}
 				} else {
-					d.Nack(false, true)
+					if nackErr := d.Nack(false, true); nackErr != nil {
+						logrus.WithError(nackErr).Error("failed to nack message")
+					}
 				}
 			}
 		}

@@ -14,6 +14,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 	httpHandlers "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
 	"github.com/kuromii5/chat-bot-chat-service/internal/service"
+	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
 )
 
@@ -24,6 +25,20 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	shutdownTracer, err := tracing.InitTracer(
+		context.Background(),
+		"chat-service",
+		cfg.Tracing.Endpoint,
+	)
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to init OpenTelemetry")
+	}
+	defer func() {
+		if err := shutdownTracer(context.Background()); err != nil {
+			logrus.WithError(err).Error("Failed to shutdown tracer")
+		}
+	}()
 
 	pg, err := postgres.New(cfg.Database)
 	if err != nil {
@@ -53,10 +68,14 @@ func main() {
 
 	select {
 	case err := <-errChan:
-		logrus.WithError(err).Fatal("Failed to start server")
-		pg.DB.Close()
-		rmq.Close()
-		os.Exit(1)
+		logrus.WithError(err).Error("Failed to start server")
+		if closeErr := pg.DB.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("Database close failed")
+		}
+		if closeErr := rmq.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("RabbitMQ close failed")
+		}
+		return
 	case <-ctx.Done():
 		logrus.Info("Server shutdown...")
 
@@ -87,4 +106,5 @@ func setupLogger(level string) {
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableTimestamp: true,
 	})
+	logrus.AddHook(&tracing.OTelHook{})
 }

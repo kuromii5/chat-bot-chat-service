@@ -6,12 +6,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/riandyrn/otelchi"
 )
 
-func NewRouter(chatHandler *Handler, notificationHandler *NotificationHandler, jwtSecret string) http.Handler {
+func NewRouter(
+	chatHandler *Handler,
+	notificationHandler *NotificationHandler,
+	jwtSecret string,
+) http.Handler {
 	r := chi.NewRouter()
 	r.Use(
 		middleware.RequestID,
+		otelchi.Middleware("chat-service", otelchi.WithChiRoutes(r)),
 		middleware.RealIP,
 		middleware.Logger,
 		middleware.Recoverer,

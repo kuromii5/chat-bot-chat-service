@@ -32,9 +32,15 @@ func (s *Server) Addr() string {
 }
 
 func (s *Server) Start() error {
-	return s.httpServer.ListenAndServe()
+	if err := s.httpServer.ListenAndServe(); err != nil {
+		return fmt.Errorf("listen and serve: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	return s.httpServer.Shutdown(ctx)
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		return fmt.Errorf("shutdown: %w", err)
+	}
+	return nil
 }

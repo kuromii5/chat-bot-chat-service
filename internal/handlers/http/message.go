@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/service"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
@@ -13,7 +14,7 @@ import (
 
 type createMessageRequest struct {
 	Content string   `json:"content" validate:"required,max=2048"`
-	Tags    []string `json:"tags" validate:"required,max=5,min=1"`
+	Tags    []string `json:"tags"    validate:"required,max=5,min=1"`
 }
 
 func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {

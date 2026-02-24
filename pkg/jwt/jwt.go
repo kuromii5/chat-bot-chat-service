@@ -14,12 +14,16 @@ type UserClaims struct {
 }
 
 func Verify(tokenStr string, jwtSecret string) (*UserClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(jwtSecret), nil
-	})
+	token, err := jwt.ParseWithClaims(
+		tokenStr,
+		&UserClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtSecret), nil
+		},
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %w", err)

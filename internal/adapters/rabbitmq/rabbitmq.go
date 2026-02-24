@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kuromii5/chat-bot-chat-service/config"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kuromii5/chat-bot-chat-service/config"
 )
 
 const MaxRetries = 5
@@ -60,12 +61,12 @@ func New(cfg config.RabbitMQConfig) (*RabbitMQ, error) {
 func (r *RabbitMQ) Close() error {
 	if r.channel != nil {
 		if err := r.channel.Close(); err != nil {
-			return err
+			return fmt.Errorf("close channel: %w", err)
 		}
 	}
 	if r.conn != nil {
 		if err := r.conn.Close(); err != nil {
-			return err
+			return fmt.Errorf("close connection: %w", err)
 		}
 	}
 	return nil

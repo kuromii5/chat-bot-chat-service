@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+
 	"github.com/kuromii5/chat-bot-chat-service/config"
 )
 
@@ -23,11 +24,11 @@ func New(cfg config.DatabaseConfig) (*Postgres, error) {
 
 	db, err := sqlx.ConnectContext(ctx, "pgx", DSN(cfg))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("connect: %w", err)
 	}
 
 	if err := db.PingContext(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ping: %w", err)
 	}
 
 	pg := &Postgres{DB: db, tagCache: make(map[string]struct{}), tagMu: sync.RWMutex{}}
@@ -48,7 +49,7 @@ func DSN(c config.DatabaseConfig) string {
 func (r *Postgres) initTagCache(ctx context.Context) error {
 	var names []string
 	if err := r.DB.SelectContext(ctx, &names, getTagsQuery); err != nil {
-		return err
+		return fmt.Errorf("init tag cache: %w", err)
 	}
 
 	r.tagCache = make(map[string]struct{}, len(names))

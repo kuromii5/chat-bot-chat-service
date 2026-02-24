@@ -13,6 +13,12 @@ type Config struct {
 	Log      LogConfig
 	RabbitMQ RabbitMQConfig
 	Metrics  MetricsConfig
+	Tracing  TracingConfig
+}
+
+type TracingConfig struct {
+	Endpoint string
+	Sampler  float64
 }
 
 type MetricsConfig struct {
@@ -76,6 +82,10 @@ func Load() (*Config, error) {
 		},
 		Metrics: MetricsConfig{
 			Port: viper.GetString("METRICS_PORT"),
+		},
+		Tracing: TracingConfig{
+			Endpoint: viper.GetString("TRACING_ENDPOINT"),
+			Sampler:  viper.GetFloat64("TRACING_SAMPLER"),
 		},
 	}
 	return cfg, nil

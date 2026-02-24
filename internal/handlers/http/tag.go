@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
@@ -20,9 +21,16 @@ func (h *Handler) UpdateProfileTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value(UserIDKey).(uuid.UUID)
-	role := r.Context().Value(UserRoleKey).(domain.Role)
-
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		wrapper.WrapError(w, r, domain.ErrAccessDenied)
+		return
+	}
+	role, ok := r.Context().Value(UserRoleKey).(domain.Role)
+	if !ok {
+		wrapper.WrapError(w, r, domain.ErrAccessDenied)
+		return
+	}
 	if role != domain.AI {
 		wrapper.WrapError(w, r, domain.ErrAccessDenied)
 		return
@@ -41,9 +49,16 @@ type getTagsResponse struct {
 }
 
 func (h *Handler) GetProfileTags(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(uuid.UUID)
-	role := r.Context().Value(UserRoleKey).(domain.Role)
-
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		wrapper.WrapError(w, r, domain.ErrAccessDenied)
+		return
+	}
+	role, ok := r.Context().Value(UserRoleKey).(domain.Role)
+	if !ok {
+		wrapper.WrapError(w, r, domain.ErrAccessDenied)
+		return
+	}
 	if role != domain.AI {
 		wrapper.WrapError(w, r, domain.ErrAccessDenied)
 		return

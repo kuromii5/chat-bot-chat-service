@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
@@ -14,6 +15,10 @@ type MessageRepository interface {
 
 type TagRepository interface {
 	AreTagsValid(ctx context.Context, tags []string) bool
-	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error)
+	UpdateProfileTags(
+		ctx context.Context,
+		userID uuid.UUID,
+		tags []string,
+	) (oldTags []string, err error)
 	GetProfileTags(ctx context.Context, userID uuid.UUID) (tags []string, err error)
 }

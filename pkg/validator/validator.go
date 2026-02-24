@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -32,14 +33,15 @@ func (e ValidationError) Error() string {
 
 func Validate(s any) error {
 	if err := validate.Struct(s); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
 			fields := make(map[string]string)
 			for _, fieldErr := range validationErrors {
 				fields[fieldErr.Field()] = formatMessage(fieldErr)
 			}
 			return ValidationError{Fields: fields}
 		}
-		return err
+		return fmt.Errorf("failed to validate: %w", err)
 	}
 	return nil
 }

@@ -10,7 +10,11 @@ type Service struct {
 	notifier    ports.MessageNotifier
 }
 
-func NewService(messageRepo ports.MessageRepository, tagRepo ports.TagRepository, notifier ports.MessageNotifier) *Service {
+func NewService(
+	messageRepo ports.MessageRepository,
+	tagRepo ports.TagRepository,
+	notifier ports.MessageNotifier,
+) *Service {
 	return &Service{
 		messageRepo: messageRepo,
 		tagRepo:     tagRepo,

@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
-	"github.com/sirupsen/logrus"
 )
 
 type CreateMessageReq struct {
@@ -20,22 +22,26 @@ type CreateMessageReq struct {
 
 func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
 	if err := validator.Validate(req); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validate: %w", err)
 	}
 
-	lastMsgs, err := s.messageRepo.GetLastMessages(ctx, "global", domain.HumanSequentialMessageLimit)
+	lastMsgs, err := s.messageRepo.GetLastMessages(
+		ctx,
+		"global",
+		domain.HumanSequentialMessageLimit,
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get last messages: %w", err)
 	}
 
 	switch req.Role {
 	case domain.Human:
 		if err := domain.ValidateHumanMsg(lastMsgs); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("validate human msg: %w", err)
 		}
 	case domain.AI:
 		if err := domain.ValidateAIMsg(lastMsgs); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("validate AI msg: %w", err)
 		}
 	default:
 		return nil, errors.New("unknown role: access denied")
@@ -51,7 +57,7 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 		Tags:       req.Tags,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("save message: %w", err)
 	}
 
 	if req.Role == domain.Human {

@@ -7,8 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/kuromii5/chat-bot-chat-service/internal/ports"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kuromii5/chat-bot-chat-service/internal/ports"
 )
 
 const (
@@ -42,11 +43,17 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		logrus.WithError(err).Error("failed to upgrade connection")
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Debug("websocket close")
+		}
+	}()
 
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err := conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		logrus.WithError(err).Debug("set read deadline")
+	}
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -60,7 +67,7 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case <-ticker.C:
-				conn.SetWriteDeadline(time.Now().Add(writeWait))
+				_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 					return
 				}
@@ -71,7 +78,7 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	err = h.notifier.Listen(ctx, uid, func(ctx context.Context, body []byte) error {
-		conn.SetWriteDeadline(time.Now().Add(writeWait))
+		_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 		return conn.WriteMessage(websocket.TextMessage, body)
 	})
 
@@ -83,7 +90,11 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseAbnormalClosure,
+			) {
 				logrus.WithError(err).Info("websocket connection closed unexpectedly")
 			}
 			break
