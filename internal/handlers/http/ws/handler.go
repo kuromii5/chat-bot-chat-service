@@ -1,4 +1,4 @@
-package http
+package ws
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
 )
 
 const (
@@ -24,16 +26,16 @@ type Listener interface {
 	Listen(ctx context.Context, userID uuid.UUID, handler func(ctx context.Context, body []byte) error) error
 }
 
-type NotificationHandler struct {
+type Handler struct {
 	listener Listener
 }
 
-func NewNotificationHandler(l Listener) *NotificationHandler {
-	return &NotificationHandler{listener: l}
+func NewHandler(l Listener) *Handler {
+	return &Handler{listener: l}
 }
 
-func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
-	uid, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
+	uid, ok := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
 	if !ok {
 		logrus.Error("user_id not found in context")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -83,7 +85,6 @@ func (h *NotificationHandler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 		return conn.WriteMessage(websocket.TextMessage, body)
 	})
-
 	if err != nil {
 		logrus.WithError(err).Errorf("failed to start rabbitmq listener for user %s", uid)
 		return

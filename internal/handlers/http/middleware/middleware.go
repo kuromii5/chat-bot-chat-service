@@ -1,4 +1,4 @@
-package http
+package middleware
 
 import (
 	"context"
@@ -36,10 +36,8 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			role := domain.Role(claims.Role)
-
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-			ctx = context.WithValue(ctx, UserRoleKey, role)
+			ctx = context.WithValue(ctx, UserRoleKey, domain.Role(claims.Role))
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

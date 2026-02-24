@@ -7,12 +7,17 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/riandyrn/otelchi"
+
+	httpMiddleware "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
+	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
+	taghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/tag"
+	wshandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/ws"
 )
 
 func NewRouter(
-	msgHandler *MessageHandler,
-	tagHandler *TagHandler,
-	notificationHandler *NotificationHandler,
+	msgH *msghandler.Handler,
+	tagH *taghandler.Handler,
+	wsH *wshandler.Handler,
 	jwtSecret string,
 ) http.Handler {
 	r := chi.NewRouter()
@@ -26,19 +31,16 @@ func NewRouter(
 
 	r.Group(func(r chi.Router) {
 		r.Route("/api/v1/chat", func(r chi.Router) {
-			r.Use(Auth(jwtSecret))
-			r.Get("/ws", notificationHandler.HandleWS)
+			r.Use(httpMiddleware.Auth(jwtSecret))
+			r.Get("/ws", wsH.HandleWS)
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Timeout(30 * time.Second))
-				r.Route("/profile", func(r chi.Router) {
-					r.Route("/tags", func(r chi.Router) {
-						r.Get("/", tagHandler.GetProfileTags)
-						r.Put("/", tagHandler.UpdateProfileTags)
-					})
+				r.Route("/profile/tags", func(r chi.Router) {
+					r.Get("/", tagH.GetProfileTags)
+					r.Put("/", tagH.UpdateProfileTags)
 				})
-
-				r.Post("/send", msgHandler.SendMessage)
+				r.Post("/send", msgH.SendMessage)
 			})
 		})
 	})

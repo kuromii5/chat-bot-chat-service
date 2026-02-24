@@ -13,7 +13,10 @@ import (
 	badgercache "github.com/kuromii5/chat-bot-chat-service/internal/adapters/badger"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
-	httpHandlers "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
+	httpserver "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
+	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
+	taghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/tag"
+	wshandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/ws"
 	msgservice "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
 	tagservice "github.com/kuromii5/chat-bot-chat-service/internal/service/tag"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
@@ -68,13 +71,15 @@ func main() {
 	msgSvc := msgservice.NewService(pg, rmq)
 	tagSvc := tagservice.NewService(pg, cache, rmq)
 
-	msgHandler := httpHandlers.NewMessageHandler(msgSvc)
-	tagHandler := httpHandlers.NewTagHandler(tagSvc)
-	notificationHandler := httpHandlers.NewNotificationHandler(rmq)
+	router := httpserver.NewRouter(
+		msghandler.NewHandler(msgSvc),
+		taghandler.NewHandler(tagSvc),
+		wshandler.NewHandler(rmq),
+		cfg.JWT.Secret,
+	)
 
-	router := httpHandlers.NewRouter(msgHandler, tagHandler, notificationHandler, cfg.JWT.Secret)
-	httpHandlers.InitMetrics(cfg.Metrics.Port)
-	server := httpHandlers.NewServer(cfg.Server.Host, cfg.Server.Port, router)
+	httpserver.InitMetrics(cfg.Metrics.Port)
+	server := httpserver.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 
 	errChan := make(chan error)
 	go func() {
