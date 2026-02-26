@@ -8,11 +8,22 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
 func (pg *postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
+	ctx, span := otel.Tracer("postgres").Start(ctx, "postgres.Save")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "INSERT"),
+		attribute.String("db.table", "core.messages"),
+		attribute.String("user.id", msg.SenderID.String()),
+	)
+
 	var message domain.Message
 	if err := pg.DB.GetContext(
 		ctx,
@@ -24,6 +35,8 @@ func (pg *postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Mess
 		msg.Content,
 		pq.Array(msg.Tags),
 	); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("save message: %w", err)
 	}
 	return &message, nil
@@ -34,10 +47,20 @@ func (pg *postgres) GetLastMessages(
 	roomID string,
 	limit int,
 ) ([]*domain.Message, error) {
-	var messages []*domain.Message
+	ctx, span := otel.Tracer("postgres").Start(ctx, "postgres.GetLastMessages")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "SELECT"),
+		attribute.String("db.table", "core.messages"),
+		attribute.String("room.id", roomID),
+		attribute.Int("limit", limit),
+	)
 
+	var messages []*domain.Message
 	err := pg.DB.SelectContext(ctx, &messages, getLastMessagesQuery, roomID, limit)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("get last messages: %w", err)
 	}
 	return messages, nil
