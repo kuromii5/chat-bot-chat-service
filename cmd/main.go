@@ -13,12 +13,14 @@ import (
 	badgercache "github.com/kuromii5/chat-bot-chat-service/internal/adapters/badger"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
+	tracingadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/tracing"
 	httpserver "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
 	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
 	taghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/tag"
 	wshandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/ws"
 	msgservice "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
 	tagservice "github.com/kuromii5/chat-bot-chat-service/internal/service/tag"
+	tracingsvc "github.com/kuromii5/chat-bot-chat-service/internal/service/tracing"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
 )
@@ -69,12 +71,14 @@ func main() {
 		logrus.Fatal("Failed to connect to rabbitmq", err)
 	}
 
-	msgSvc := msgservice.NewService(pg, rmq)
-	tagSvc := tagservice.NewService(pg, cache, rmq)
+	tracingPG := tracingadapter.NewRepo(pg)
+
+	msgSvc := msgservice.NewService(tracingPG, rmq)
+	tagSvc := tagservice.NewService(tracingPG, cache, rmq)
 
 	router := httpserver.NewRouter(
-		msghandler.NewHandler(msgSvc),
-		taghandler.NewHandler(tagSvc),
+		msghandler.NewHandler(tracingsvc.NewMsgService(msgSvc)),
+		taghandler.NewHandler(tracingsvc.NewTagService(tagSvc)),
 		wshandler.NewHandler(rmq),
 		cfg.JWT.Secret,
 	)
