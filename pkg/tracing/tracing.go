@@ -15,6 +15,7 @@ import (
 func InitTracer(
 	ctx context.Context,
 	serviceName, collectorURL string,
+	samplerRatio float64,
 ) (func(context.Context) error, error) {
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithInsecure(),
@@ -36,6 +37,11 @@ func InitTracer(
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
+		sdktrace.WithSampler(
+			sdktrace.ParentBased(
+				sdktrace.TraceIDRatioBased(samplerRatio),
+			),
+		),
 	)
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(

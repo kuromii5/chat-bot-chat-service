@@ -35,6 +35,7 @@ func main() {
 		context.Background(),
 		"chat-service",
 		cfg.Tracing.Endpoint,
+		cfg.Tracing.Sampler,
 	)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to init OpenTelemetry")

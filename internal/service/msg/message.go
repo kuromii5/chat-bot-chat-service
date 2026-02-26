@@ -58,7 +58,8 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 
 	if req.Role == domain.Human {
 		go func() {
-			if err := s.notifier.PublishNewQuestion(ctx, saved); err != nil {
+			publishCtx := context.WithoutCancel(ctx)
+			if err := s.notifier.PublishNewQuestion(publishCtx, saved); err != nil {
 				logrus.WithError(err).Error("failed to publish new question")
 			}
 		}()
