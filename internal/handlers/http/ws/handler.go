@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 
+	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
 )
 
@@ -24,6 +25,7 @@ var upgrader = websocket.Upgrader{
 
 type Listener interface {
 	Listen(ctx context.Context, userID uuid.UUID, handler func(ctx context.Context, body []byte) error) error
+	ListenReplies(ctx context.Context, userID uuid.UUID, handler func(ctx context.Context, body []byte) error) error
 }
 
 type Handler struct {
@@ -35,10 +37,17 @@ func NewHandler(l Listener) *Handler {
 }
 
 func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
-	uid, ok := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
-	if !ok {
-		logrus.Error("user_id not found in context")
-		w.WriteHeader(http.StatusUnauthorized)
+	uid, _ := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	role, _ := r.Context().Value(middleware.UserRoleKey).(domain.Role)
+
+	var listenFn func(context.Context, uuid.UUID, func(context.Context, []byte) error) error
+	switch role {
+	case domain.AI:
+		listenFn = h.listener.Listen
+	case domain.Human:
+		listenFn = h.listener.ListenReplies
+	default:
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
@@ -81,7 +90,7 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	err = h.listener.Listen(ctx, uid, func(ctx context.Context, body []byte) error {
+	err = listenFn(ctx, uid, func(ctx context.Context, body []byte) error {
 		_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 		return conn.WriteMessage(websocket.TextMessage, body)
 	})

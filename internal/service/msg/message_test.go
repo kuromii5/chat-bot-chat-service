@@ -24,10 +24,12 @@ func TestMain(m *testing.M) {
 
 func TestSendMessage_Human_Success(t *testing.T) {
 	repo := mocks.NewMockMessageRepo(t)
+	roomRepo := mocks.NewMockRoomRepo(t)
 	notifier := mocks.NewMockNotifier(t)
-	svc := msg.NewService(repo, notifier)
+	svc := msg.NewService(repo, roomRepo, notifier)
 
 	userID, _ := uuid.NewV7()
+	roomID, _ := uuid.NewV7()
 	req := msg.CreateMessageReq{
 		UserID:  userID,
 		Content: "What is the best way to learn Go?",
@@ -35,25 +37,30 @@ func TestSendMessage_Human_Success(t *testing.T) {
 		Tags:    []string{"backend"},
 	}
 
+	createdRoom := &domain.Room{
+		ID:      roomID,
+		HumanID: userID,
+		Status:  domain.RoomOpen,
+	}
 	savedMsg := &domain.Message{
-		ID:         uuid.New(),
+		ID:         uuid.Must(uuid.NewV7()),
 		SenderID:   userID,
 		SenderRole: domain.Human,
-		RoomID:     "global",
+		RoomID:     roomID,
 		Content:    req.Content,
 		Tags:       req.Tags,
 		CreatedAt:  time.Now(),
 	}
 
-	repo.EXPECT().
-		GetLastMessages(mock.Anything, "global", domain.HumanSequentialMessageLimit).
-		Return([]*domain.Message{}, nil)
+	roomRepo.EXPECT().
+		CreateRoom(mock.Anything, userID).
+		Return(createdRoom, nil)
 	repo.EXPECT().
 		Save(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 			return m.SenderID == userID &&
 				m.SenderRole == domain.Human &&
-				m.Content == req.Content &&
-				m.RoomID == "global"
+				m.RoomID == roomID &&
+				m.Content == req.Content
 		})).
 		Return(savedMsg, nil)
 

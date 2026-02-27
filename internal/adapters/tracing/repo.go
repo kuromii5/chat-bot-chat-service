@@ -15,9 +15,13 @@ import (
 // Repo satisfies them all via duck typing — no service package imports needed.
 type postgresRepo interface {
 	Save(ctx context.Context, msg *domain.Message) (*domain.Message, error)
-	GetLastMessages(ctx context.Context, roomID string, limit int) ([]*domain.Message, error)
+	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
 	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error)
 	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
+	CreateRoom(ctx context.Context, humanID uuid.UUID) (*domain.Room, error)
+	GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error)
+	ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error
+	CloseRoom(ctx context.Context, roomID uuid.UUID, userID uuid.UUID) error
 }
 
 const dbTracer = "postgres"
@@ -49,13 +53,13 @@ func (r *Repo) Save(ctx context.Context, msg *domain.Message) (*domain.Message, 
 	return result, err
 }
 
-func (r *Repo) GetLastMessages(ctx context.Context, roomID string, limit int) ([]*domain.Message, error) {
+func (r *Repo) GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error) {
 	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.GetLastMessages")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("db.operation", "SELECT"),
 		attribute.String("db.table", "core.messages"),
-		attribute.String("room.id", roomID),
+		attribute.String("room.id", roomID.String()),
 		attribute.Int("limit", limit),
 	)
 
@@ -99,4 +103,74 @@ func (r *Repo) GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, 
 		span.SetStatus(codes.Error, err.Error())
 	}
 	return result, err
+}
+
+func (r *Repo) CreateRoom(ctx context.Context, humanID uuid.UUID) (*domain.Room, error) {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.CreateRoom")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "INSERT"),
+		attribute.String("db.table", "core.rooms"),
+		attribute.String("human.id", humanID.String()),
+	)
+
+	result, err := r.inner.CreateRoom(ctx, humanID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return result, err
+}
+
+func (r *Repo) GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error) {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.GetRoom")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "SELECT"),
+		attribute.String("db.table", "core.rooms"),
+		attribute.String("room.id", roomID.String()),
+	)
+
+	result, err := r.inner.GetRoom(ctx, roomID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return result, err
+}
+
+func (r *Repo) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.ClaimRoom")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "UPDATE"),
+		attribute.String("db.table", "core.rooms"),
+		attribute.String("room.id", roomID.String()),
+		attribute.String("ai.id", aiID.String()),
+	)
+
+	err := r.inner.ClaimRoom(ctx, roomID, aiID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
+}
+
+func (r *Repo) CloseRoom(ctx context.Context, roomID uuid.UUID, userID uuid.UUID) error {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.CloseRoom")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "UPDATE"),
+		attribute.String("db.table", "core.rooms"),
+		attribute.String("room.id", roomID.String()),
+		attribute.String("user.id", userID.String()),
+	)
+
+	err := r.inner.CloseRoom(ctx, roomID, userID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
 }

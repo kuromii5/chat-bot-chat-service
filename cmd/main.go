@@ -16,9 +16,11 @@ import (
 	tracingadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/tracing"
 	httpserver "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
 	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
+	roomhandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/room"
 	taghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/tag"
 	wshandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/ws"
 	msgservice "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
+	roomservice "github.com/kuromii5/chat-bot-chat-service/internal/service/room"
 	tagservice "github.com/kuromii5/chat-bot-chat-service/internal/service/tag"
 	tracingsvc "github.com/kuromii5/chat-bot-chat-service/internal/service/tracing"
 	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
@@ -73,13 +75,15 @@ func main() {
 
 	tracingPG := tracingadapter.NewRepo(pg)
 
-	msgSvc := msgservice.NewService(tracingPG, rmq)
+	msgSvc := msgservice.NewService(tracingPG, tracingPG, rmq)
 	tagSvc := tagservice.NewService(tracingPG, cache, rmq)
+	roomSvc := roomservice.NewService(tracingPG)
 
 	router := httpserver.NewRouter(
 		msghandler.NewHandler(tracingsvc.NewMsgService(msgSvc)),
 		taghandler.NewHandler(tracingsvc.NewTagService(tagSvc)),
 		wshandler.NewHandler(rmq),
+		roomhandler.NewHandler(tracingsvc.NewRoomService(roomSvc)),
 		cfg.JWT.Secret,
 	)
 

@@ -11,6 +11,7 @@ packages:
   github.com/kuromii5/chat-bot-chat-service/internal/service/msg:
     interfaces:
       MessageRepo:
+      RoomRepo:
       Notifier:
   github.com/kuromii5/chat-bot-chat-service/internal/service/tag:
     interfaces:

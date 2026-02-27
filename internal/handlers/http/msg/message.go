@@ -14,8 +14,9 @@ import (
 )
 
 type createMessageRequest struct {
-	Content string   `json:"content" validate:"required,max=2048"`
-	Tags    []string `json:"tags"    validate:"required,max=5,min=1"`
+	Content string    `json:"content"  validate:"required,max=2048"`
+	Tags    []string  `json:"tags"     validate:"omitempty,max=5"`
+	RoomID  uuid.UUID `json:"room_id"` // AI: required; Human: omit
 }
 
 func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
@@ -24,20 +25,20 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		wrapper.WrapError(w, r, err)
 		return
 	}
-
-	userID, _ := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
-	userRole, _ := r.Context().Value(middleware.UserRoleKey).(domain.Role)
-
 	if err := validator.Validate(req); err != nil {
 		wrapper.WrapError(w, r, err)
 		return
 	}
 
+	userID, _ := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
+	userRole, _ := r.Context().Value(middleware.UserRoleKey).(domain.Role)
+
 	saved, err := h.svc.SendMessage(r.Context(), msgservice.CreateMessageReq{
 		UserID:  userID,
-		Content: req.Content,
 		Role:    userRole,
+		Content: req.Content,
 		Tags:    req.Tags,
+		RoomID:  req.RoomID,
 	})
 	if err != nil {
 		wrapper.WrapError(w, r, err)

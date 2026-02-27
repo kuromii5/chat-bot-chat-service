@@ -15,4 +15,10 @@ var (
 	ErrAuthorizationHeaderRequired = errors.New("authorization header is required")
 	ErrInvalidAuthorizationFormat  = errors.New("invalid authorization format")
 	ErrInvalidOrExpiredToken       = errors.New("invalid or expired token")
+
+	ErrRoomNotFound       = errors.New("room not found")
+	ErrRoomAlreadyClaimed = errors.New("room already claimed by another AI")
+	ErrRoomNotActive      = errors.New("room is not active")
+	ErrNotRoomParticipant = errors.New("you are not a participant of this room")
+	ErrRoomRequired       = errors.New("room_id is required for AI messages")
 )

@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/riandyrn/otelchi"
 
+	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	httpMiddleware "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
 )
 
@@ -24,10 +25,16 @@ type WSHandler interface {
 	HandleWS(http.ResponseWriter, *http.Request)
 }
 
+type RoomHandler interface {
+	ClaimRoom(http.ResponseWriter, *http.Request)
+	CloseRoom(http.ResponseWriter, *http.Request)
+}
+
 func NewRouter(
 	msgH MessageHandler,
 	tagH TagHandler,
 	wsH WSHandler,
+	roomH RoomHandler,
 	jwtSecret string,
 ) http.Handler {
 	r := chi.NewRouter()
@@ -39,18 +46,26 @@ func NewRouter(
 		middleware.Recoverer,
 	)
 
-	r.Group(func(r chi.Router) {
-		r.Route("/api/v1/chat", func(r chi.Router) {
-			r.Use(httpMiddleware.Auth(jwtSecret))
-			r.Get("/ws", wsH.HandleWS)
+	r.Route("/api/v1/chat", func(r chi.Router) {
+		r.Use(httpMiddleware.Auth(jwtSecret))
 
+		// Long-lived — no timeout
+		r.Get("/ws", wsH.HandleWS)
+
+		// Regular HTTP endpoints
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Timeout(30 * time.Second))
+
+			// Both roles
+			r.Post("/send", msgH.SendMessage)
+			r.Post("/rooms/{roomID}/close", roomH.CloseRoom)
+
+			// AI only
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Timeout(30 * time.Second))
-				r.Route("/profile/tags", func(r chi.Router) {
-					r.Get("/", tagH.GetProfileTags)
-					r.Put("/", tagH.UpdateProfileTags)
-				})
-				r.Post("/send", msgH.SendMessage)
+				r.Use(httpMiddleware.RequireRole(domain.AI))
+				r.Get("/profile/tags", tagH.GetProfileTags)
+				r.Put("/profile/tags", tagH.UpdateProfileTags)
+				r.Post("/rooms/{roomID}/claim", roomH.ClaimRoom)
 			})
 		})
 	})

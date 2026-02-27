@@ -31,7 +31,7 @@ func (pg *postgres) Save(ctx context.Context, msg *domain.Message) (*domain.Mess
 
 func (pg *postgres) GetLastMessages(
 	ctx context.Context,
-	roomID string,
+	roomID uuid.UUID,
 	limit int,
 ) ([]*domain.Message, error) {
 	var messages []*domain.Message
@@ -40,31 +40,4 @@ func (pg *postgres) GetLastMessages(
 		return nil, fmt.Errorf("get last messages: %w", err)
 	}
 	return messages, nil
-}
-
-func (pg *postgres) ClaimMessage(ctx context.Context, messageID uuid.UUID, aiID uuid.UUID) error {
-	tx, err := pg.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback() // no-op if tx already committed
-	}()
-
-	var currentAssignee *uuid.UUID
-	if err := tx.GetContext(ctx, &currentAssignee, getMessageAssigneeQuery, messageID); err != nil {
-		return fmt.Errorf("get message assignee: %w", err)
-	}
-
-	if currentAssignee != nil {
-		return errors.New("message already claimed by another AI")
-	}
-
-	if _, err := tx.ExecContext(ctx, claimMessageQuery, aiID, messageID); err != nil {
-		return fmt.Errorf("claim message: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit: %w", err)
-	}
-	return nil
 }

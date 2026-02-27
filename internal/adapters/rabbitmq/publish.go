@@ -32,6 +32,33 @@ func (c amqpHeaderCarrier) Keys() []string {
 	return keys
 }
 
+func (r *RabbitMQ) PublishAIReply(ctx context.Context, humanID uuid.UUID, msg *domain.Message) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("marshal message: %w", err)
+	}
+
+	headers := amqp.Table{}
+	otel.GetTextMapPropagator().Inject(ctx, amqpHeaderCarrier(headers))
+
+	routingKey := fmt.Sprintf("reply.%s", humanID.String())
+	if err := r.channel.PublishWithContext(ctx,
+		r.config.Exchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			DeliveryMode: amqp.Persistent,
+			Headers:      headers,
+			Body:         body,
+		},
+	); err != nil {
+		return fmt.Errorf("publish: %w", err)
+	}
+	return nil
+}
+
 func (r *RabbitMQ) PublishNewQuestion(ctx context.Context, msg *domain.Message) error {
 	body, err := json.Marshal(msg)
 	if err != nil {

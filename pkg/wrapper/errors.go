@@ -52,4 +52,24 @@ var errorRegistry = map[error]ErrorResponse{
 		Status:  http.StatusUnauthorized,
 		Message: "Invalid or expired token",
 	},
+	domain.ErrRoomNotFound: {
+		Status:  http.StatusNotFound,
+		Message: "Room not found",
+	},
+	domain.ErrRoomAlreadyClaimed: {
+		Status:  http.StatusConflict,
+		Message: "Room already claimed by another AI",
+	},
+	domain.ErrRoomNotActive: {
+		Status:  http.StatusBadRequest,
+		Message: "Room is not active",
+	},
+	domain.ErrNotRoomParticipant: {
+		Status:  http.StatusForbidden,
+		Message: "You are not a participant of this room",
+	},
+	domain.ErrRoomRequired: {
+		Status:  http.StatusBadRequest,
+		Message: "room_id is required for AI messages",
+	},
 }
