@@ -1,5 +1,7 @@
 package msg
 
+//go:generate mockery
+
 import (
 	"context"
 

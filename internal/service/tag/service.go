@@ -1,5 +1,7 @@
 package tag
 
+//go:generate mockery
+
 import (
 	"context"
 

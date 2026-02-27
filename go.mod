@@ -3,11 +3,13 @@ module github.com/kuromii5/chat-bot-chat-service
 go 1.26
 
 require (
+	github.com/dgraph-io/badger/v4 v4.9.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/viper v1.21.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.40.0
 	go.opentelemetry.io/otel/sdk v1.40.0
@@ -15,11 +17,14 @@ require (
 )
 
 require (
-	github.com/dgraph-io/badger/v4 v4.9.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (

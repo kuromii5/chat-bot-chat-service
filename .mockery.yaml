@@ -1,0 +1,19 @@
+with-expecter: true
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: "mocks"
+mockname: "Mock{{.InterfaceName}}"
+filename: "{{.InterfaceName}}.go"
+resolve-type-alias: false
+disable-version-string: true
+issue-845-fix: true
+
+packages:
+  github.com/kuromii5/chat-bot-chat-service/internal/service/msg:
+    interfaces:
+      MessageRepo:
+      Notifier:
+  github.com/kuromii5/chat-bot-chat-service/internal/service/tag:
+    interfaces:
+      TagRepo:
+      TagCache:
+      Notifier:
