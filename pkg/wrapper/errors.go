@@ -60,6 +60,10 @@ var errorRegistry = map[error]ErrorResponse{
 		Status:  http.StatusConflict,
 		Message: "Room already claimed by another AI",
 	},
+	domain.ErrRoomAlreadyClosed: {
+		Status:  http.StatusConflict,
+		Message: "Room is already closed",
+	},
 	domain.ErrRoomNotActive: {
 		Status:  http.StatusBadRequest,
 		Message: "Room is not active",

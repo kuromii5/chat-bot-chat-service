@@ -11,6 +11,7 @@ import (
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
+	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
 
 const (
@@ -39,6 +40,11 @@ func NewHandler(l Listener) *Handler {
 func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 	uid, _ := r.Context().Value(middleware.UserIDKey).(uuid.UUID)
 	role, _ := r.Context().Value(middleware.UserRoleKey).(domain.Role)
+	expiry, ok := r.Context().Value(middleware.TokenExpiryKey).(time.Time)
+	if !ok || expiry.IsZero() {
+		wrapper.WrapError(w, r, domain.ErrInvalidOrExpiredToken)
+		return
+	}
 
 	var listenFn func(context.Context, uuid.UUID, func(context.Context, []byte) error) error
 	switch role {
@@ -70,8 +76,18 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
-	ctx, cancel := context.WithCancel(r.Context())
+	ctx, cancel := context.WithDeadline(r.Context(), expiry)
 	defer cancel()
+
+	go func() {
+		<-ctx.Done()
+		_ = conn.WriteControl(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, "token expired"),
+			time.Now().Add(writeWait),
+		)
+		conn.Close()
+	}()
 
 	go func() {
 		ticker := time.NewTicker(pingPeriod)

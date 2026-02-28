@@ -29,12 +29,18 @@ const (
 		WHERE id = $2 AND ai_id IS NULL
 		RETURNING id;
 	`
+	checkRoomQuery = `
+		SELECT status,
+		       (human_id = $2 OR ai_id = $2) AS is_participant
+		FROM core.rooms
+		WHERE id = $1;
+	`
 	closeRoomQuery = `
 		UPDATE core.rooms
 		SET status = 'closed', closed_at = NOW()
 		WHERE id = $1
 		  AND (human_id = $2 OR ai_id = $2)
-		  AND status = 'active';
+		  AND status IN ('open', 'active');
 	`
 	getRoomQuery = `
 		SELECT id, human_id, ai_id, status, created_at, closed_at

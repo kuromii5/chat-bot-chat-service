@@ -32,16 +32,25 @@ func (pg *postgres) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.U
 }
 
 func (pg *postgres) CloseRoom(ctx context.Context, roomID uuid.UUID, userID uuid.UUID) error {
-	result, err := pg.DB.ExecContext(ctx, closeRoomQuery, roomID, userID)
-	if err != nil {
+	var row struct {
+		Status        domain.RoomStatus `db:"status"`
+		IsParticipant bool              `db:"is_participant"`
+	}
+	if err := pg.DB.GetContext(ctx, &row, checkRoomQuery, roomID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrRoomNotFound
+		}
+		return fmt.Errorf("check room: %w", err)
+	}
+	if !row.IsParticipant {
+		return domain.ErrNotRoomParticipant
+	}
+	if row.Status == domain.RoomClosed {
+		return domain.ErrRoomAlreadyClosed
+	}
+
+	if _, err := pg.DB.ExecContext(ctx, closeRoomQuery, roomID, userID); err != nil {
 		return fmt.Errorf("close room: %w", err)
-	}
-	n, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("rows affected: %w", err)
-	}
-	if n == 0 {
-		return domain.ErrRoomNotFound
 	}
 	return nil
 }

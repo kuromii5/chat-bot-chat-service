@@ -18,6 +18,7 @@ var (
 
 	ErrRoomNotFound       = errors.New("room not found")
 	ErrRoomAlreadyClaimed = errors.New("room already claimed by another AI")
+	ErrRoomAlreadyClosed  = errors.New("room is already closed")
 	ErrRoomNotActive      = errors.New("room is not active")
 	ErrNotRoomParticipant = errors.New("you are not a participant of this room")
 	ErrRoomRequired       = errors.New("room_id is required for AI messages")

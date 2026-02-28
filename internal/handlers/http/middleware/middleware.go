@@ -12,8 +12,11 @@ import (
 
 type contextKey string
 
-const UserIDKey contextKey = "userID"
-const UserRoleKey contextKey = "userRole"
+const (
+	UserIDKey      contextKey = "userID"
+	UserRoleKey    contextKey = "userRole"
+	TokenExpiryKey contextKey = "tokenExpiry"
+)
 
 func RequireRole(roles ...domain.Role) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -57,6 +60,7 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, UserRoleKey, domain.Role(claims.Role))
+			ctx = context.WithValue(ctx, TokenExpiryKey, claims.ExpiresAt.Time)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
