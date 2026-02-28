@@ -87,10 +87,10 @@ func main() {
 		cfg.JWT.Secret,
 	)
 
-	httpserver.InitMetrics(cfg.Metrics.Port)
+	httpserver.InitMetrics(ctx, cfg.Metrics.Port)
 	server := httpserver.NewServer(cfg.Server.Host, cfg.Server.Port, router)
 
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		logrus.Infof("server address: %s", server.Addr())
 		if err := server.Start(); err != nil {

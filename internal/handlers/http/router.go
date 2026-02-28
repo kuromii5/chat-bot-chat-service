@@ -10,6 +10,7 @@ import (
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	httpMiddleware "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
+	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
 )
 
 type MessageHandler interface {
@@ -42,7 +43,7 @@ func NewRouter(
 		middleware.RequestID,
 		otelchi.Middleware("chat-service", otelchi.WithChiRoutes(r)),
 		middleware.RealIP,
-		middleware.Logger,
+		wrapper.AccessLog,
 		middleware.Recoverer,
 	)
 

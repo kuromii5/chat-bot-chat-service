@@ -24,12 +24,8 @@ func WrapError(w http.ResponseWriter, r *http.Request, err error) {
 	requestID := middleware.GetReqID(r.Context())
 
 	logrus.WithFields(logrus.Fields{
-		"service":    "chat-service",
 		"request_id": requestID,
-		"status":     mapping.status,
 		"error":      err.Error(),
-		"method":     r.Method,
-		"path":       r.URL.Path,
 	}).Log(getLogLevel(mapping.status), "request_error")
 
 	response := map[string]any{"error": mapping.message}
