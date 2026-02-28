@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
@@ -92,6 +93,7 @@ func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*dom
 		SenderRole: domain.AI,
 		RoomID:     req.RoomID,
 		Content:    req.Content,
+		Tags:       pq.StringArray{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
