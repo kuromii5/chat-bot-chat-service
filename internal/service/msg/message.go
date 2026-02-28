@@ -32,6 +32,13 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 }
 
 func (s *Service) sendHumanMessage(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
+	if req.RoomID == (uuid.UUID{}) {
+		return s.sendHumanNewQuestion(ctx, req)
+	}
+	return s.sendHumanFollowUp(ctx, req)
+}
+
+func (s *Service) sendHumanNewQuestion(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
 	if len(req.Tags) == 0 {
 		return nil, domain.ErrInvalidTags
 	}
@@ -60,6 +67,32 @@ func (s *Service) sendHumanMessage(ctx context.Context, req CreateMessageReq) (*
 			logrus.WithError(err).Error("failed to publish new question")
 		}
 	}()
+
+	return saved, nil
+}
+
+func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
+	room, err := s.roomRepo.GetRoom(ctx, req.RoomID)
+	if err != nil {
+		return nil, err
+	}
+	if room.Status != domain.RoomActive {
+		return nil, domain.ErrRoomNotActive
+	}
+	if room.HumanID != req.UserID {
+		return nil, domain.ErrNotRoomParticipant
+	}
+
+	saved, err := s.repo.Save(ctx, &domain.Message{
+		SenderID:   req.UserID,
+		SenderRole: domain.Human,
+		RoomID:     req.RoomID,
+		Content:    req.Content,
+		Tags:       pq.StringArray{},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("save message: %w", err)
+	}
 
 	return saved, nil
 }
