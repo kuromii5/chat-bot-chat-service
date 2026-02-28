@@ -9,6 +9,16 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+func (r *RabbitMQ) BindRoomToAI(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error {
+	queueName := fmt.Sprintf("ai_queue_%s", aiID.String())
+	routingKey := fmt.Sprintf("room.%s", roomID.String())
+
+	if err := r.channel.QueueBind(queueName, routingKey, r.config.Exchange, false, nil); err != nil {
+		return fmt.Errorf("queue bind room: %w", err)
+	}
+	return nil
+}
+
 func (r *RabbitMQ) SyncAIQueue(
 	ctx context.Context,
 	userID uuid.UUID,

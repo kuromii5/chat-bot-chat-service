@@ -77,7 +77,7 @@ func main() {
 
 	msgSvc := msgservice.NewService(tracingPG, tracingPG, rmq)
 	tagSvc := tagservice.NewService(tracingPG, cache, rmq)
-	roomSvc := roomservice.NewService(tracingPG)
+	roomSvc := roomservice.NewService(tracingPG, rmq)
 
 	router := httpserver.NewRouter(
 		msghandler.NewHandler(tracingsvc.NewMsgService(msgSvc)),

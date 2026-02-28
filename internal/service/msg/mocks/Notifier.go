@@ -72,6 +72,54 @@ func (_c *MockNotifier_PublishAIReply_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// PublishFollowUp provides a mock function with given fields: ctx, roomID, _a2
+func (_m *MockNotifier) PublishFollowUp(ctx context.Context, roomID uuid.UUID, _a2 *domain.Message) error {
+	ret := _m.Called(ctx, roomID, _a2)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PublishFollowUp")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *domain.Message) error); ok {
+		r0 = rf(ctx, roomID, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockNotifier_PublishFollowUp_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PublishFollowUp'
+type MockNotifier_PublishFollowUp_Call struct {
+	*mock.Call
+}
+
+// PublishFollowUp is a helper method to define mock.On call
+//   - ctx context.Context
+//   - roomID uuid.UUID
+//   - _a2 *domain.Message
+func (_e *MockNotifier_Expecter) PublishFollowUp(ctx interface{}, roomID interface{}, _a2 interface{}) *MockNotifier_PublishFollowUp_Call {
+	return &MockNotifier_PublishFollowUp_Call{Call: _e.mock.On("PublishFollowUp", ctx, roomID, _a2)}
+}
+
+func (_c *MockNotifier_PublishFollowUp_Call) Run(run func(ctx context.Context, roomID uuid.UUID, _a2 *domain.Message)) *MockNotifier_PublishFollowUp_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(*domain.Message))
+	})
+	return _c
+}
+
+func (_c *MockNotifier_PublishFollowUp_Call) Return(_a0 error) *MockNotifier_PublishFollowUp_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockNotifier_PublishFollowUp_Call) RunAndReturn(run func(context.Context, uuid.UUID, *domain.Message) error) *MockNotifier_PublishFollowUp_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // PublishNewQuestion provides a mock function with given fields: ctx, _a1
 func (_m *MockNotifier) PublishNewQuestion(ctx context.Context, _a1 *domain.Message) error {
 	ret := _m.Called(ctx, _a1)

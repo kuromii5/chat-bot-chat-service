@@ -23,6 +23,7 @@ type RoomRepo interface {
 type Notifier interface {
 	PublishNewQuestion(ctx context.Context, msg *domain.Message) error
 	PublishAIReply(ctx context.Context, humanID uuid.UUID, msg *domain.Message) error
+	PublishFollowUp(ctx context.Context, roomID uuid.UUID, msg *domain.Message) error
 }
 
 type Service struct {

@@ -94,6 +94,13 @@ func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (
 		return nil, fmt.Errorf("save message: %w", err)
 	}
 
+	go func() {
+		publishCtx := context.WithoutCancel(ctx)
+		if err := s.notifier.PublishFollowUp(publishCtx, req.RoomID, saved); err != nil {
+			logrus.WithError(err).Error("failed to publish follow-up")
+		}
+	}()
+
 	return saved, nil
 }
 
