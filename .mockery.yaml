@@ -1,7 +1,6 @@
 with-expecter: true
 dir: "{{.InterfaceDir}}/mocks"
 outpkg: "mocks"
-mockname: "Mock{{.InterfaceName}}"
 filename: "{{.InterfaceName}}.go"
 resolve-type-alias: false
 disable-version-string: true
