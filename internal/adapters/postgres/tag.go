@@ -38,9 +38,8 @@ func (pg *postgres) UpdateProfileTags(
 func (pg *postgres) GetProfileTags(
 	ctx context.Context,
 	userID uuid.UUID,
-) ([]string, error) {
-	var tags []string
-	if err := pg.DB.SelectContext(ctx, &tags, getProfileTagsQuery, userID); err != nil {
+) (tags []string, err error) {
+	if err = pg.DB.SelectContext(ctx, &tags, getProfileTagsQuery, userID); err != nil {
 		return nil, fmt.Errorf("get profile tags: %w", err)
 	}
 	return tags, nil

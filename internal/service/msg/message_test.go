@@ -22,11 +22,10 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestSendMessage_Human_Success(t *testing.T) {
+func TestSendMessage_Human_NewQuestion_Success(t *testing.T) {
 	repo := mocks.NewMockMessageRepo(t)
 	roomRepo := mocks.NewMockRoomRepo(t)
-	notifier := mocks.NewMockNotifier(t)
-	svc := msg.NewService(repo, roomRepo, notifier)
+	svc := msg.NewService(repo, roomRepo)
 
 	userID, _ := uuid.NewV7()
 	roomID, _ := uuid.NewV7()
@@ -56,29 +55,15 @@ func TestSendMessage_Human_Success(t *testing.T) {
 		CreateRoom(mock.Anything, userID).
 		Return(createdRoom, nil)
 	repo.EXPECT().
-		Save(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
+		SaveWithOutbox(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 			return m.SenderID == userID &&
 				m.SenderRole == domain.Human &&
 				m.RoomID == roomID &&
 				m.Content == req.Content
-		})).
+		}), domain.EventNewQuestion, uuid.Nil).
 		Return(savedMsg, nil)
 
-	published := make(chan struct{})
-	notifier.EXPECT().
-		PublishNewQuestion(mock.Anything, savedMsg).
-		Run(func(_ context.Context, _ *domain.Message) {
-			close(published)
-		}).
-		Return(nil)
-
 	result, err := svc.SendMessage(context.Background(), req)
-
-	select {
-	case <-published:
-	case <-time.After(time.Second):
-		t.Fatal("PublishNewQuestion was not called within 1s")
-	}
 
 	require.NoError(t, err)
 	assert.Equal(t, savedMsg, result)

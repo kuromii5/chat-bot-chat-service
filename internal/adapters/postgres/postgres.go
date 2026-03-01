@@ -40,9 +40,9 @@ func DSN(c config.DatabaseConfig) string {
 
 // GetAllTags fetches all available tag names from the database.
 // Used at startup to seed the BadgerDB tag cache.
-func (r *postgres) GetAllTags(ctx context.Context) ([]string, error) {
+func (pg *postgres) GetAllTags(ctx context.Context) ([]string, error) {
 	var names []string
-	if err := r.DB.SelectContext(ctx, &names, getTagsQuery); err != nil {
+	if err := pg.DB.SelectContext(ctx, &names, getTagsQuery); err != nil {
 		return nil, fmt.Errorf("get all tags: %w", err)
 	}
 	return names, nil

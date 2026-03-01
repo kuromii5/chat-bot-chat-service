@@ -21,10 +21,10 @@ func (r *RabbitMQ) BindRoomToAI(ctx context.Context, roomID uuid.UUID, aiID uuid
 
 func (r *RabbitMQ) SyncAIQueue(
 	ctx context.Context,
-	userID uuid.UUID,
+	aiID uuid.UUID,
 	tags, oldTags []string,
 ) error {
-	queueName := fmt.Sprintf("ai_queue_%s", userID.String())
+	queueName := fmt.Sprintf("ai_queue_%s", aiID.String())
 
 	if _, err := r.channel.QueueDeclare(queueName, true, false, false, false, nil); err != nil {
 		return fmt.Errorf("queue declare: %w", err)

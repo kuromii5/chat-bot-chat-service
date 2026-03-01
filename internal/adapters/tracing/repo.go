@@ -14,7 +14,7 @@ import (
 // postgresRepo is the union of all repo interfaces defined in the service layer.
 // Repo satisfies them all via duck typing — no service package imports needed.
 type postgresRepo interface {
-	Save(ctx context.Context, msg *domain.Message) (*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
 	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
 	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error)
 	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
@@ -22,6 +22,9 @@ type postgresRepo interface {
 	GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error)
 	ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error
 	CloseRoom(ctx context.Context, roomID uuid.UUID, userID uuid.UUID) error
+	FetchPending(ctx context.Context, limit int) ([]*domain.OutboxEvent, error)
+	MarkPublished(ctx context.Context, id uuid.UUID) error
+	MarkFailed(ctx context.Context, id uuid.UUID, errMsg string) error
 }
 
 const dbTracer = "postgres"
@@ -36,16 +39,17 @@ func NewRepo(inner postgresRepo) *Repo {
 	return &Repo{inner: inner}
 }
 
-func (r *Repo) Save(ctx context.Context, msg *domain.Message) (*domain.Message, error) {
-	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.Save")
+func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error) {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.SaveWithOutbox")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("db.operation", "INSERT"),
-		attribute.String("db.table", "core.messages"),
+		attribute.String("db.table", "core.messages, core.outbox_events"),
 		attribute.String("user.id", msg.SenderID.String()),
+		attribute.String("event.type", string(eventType)),
 	)
 
-	result, err := r.inner.Save(ctx, msg)
+	result, err := r.inner.SaveWithOutbox(ctx, msg, eventType, humanID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -168,6 +172,57 @@ func (r *Repo) CloseRoom(ctx context.Context, roomID uuid.UUID, userID uuid.UUID
 	)
 
 	err := r.inner.CloseRoom(ctx, roomID, userID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
+}
+
+func (r *Repo) FetchPending(ctx context.Context, limit int) ([]*domain.OutboxEvent, error) {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.FetchPending")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "SELECT FOR UPDATE"),
+		attribute.String("db.table", "core.outbox_events"),
+		attribute.Int("limit", limit),
+	)
+
+	result, err := r.inner.FetchPending(ctx, limit)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return result, err
+}
+
+func (r *Repo) MarkPublished(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.MarkPublished")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "UPDATE"),
+		attribute.String("db.table", "core.outbox_events"),
+		attribute.String("event.id", id.String()),
+	)
+
+	err := r.inner.MarkPublished(ctx, id)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
+}
+
+func (r *Repo) MarkFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.MarkFailed")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("db.operation", "UPDATE"),
+		attribute.String("db.table", "core.outbox_events"),
+		attribute.String("event.id", id.String()),
+	)
+
+	err := r.inner.MarkFailed(ctx, id, errMsg)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

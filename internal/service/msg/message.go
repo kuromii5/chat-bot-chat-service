@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
@@ -50,23 +49,16 @@ func (s *Service) sendHumanNewQuestion(ctx context.Context, req CreateMessageReq
 		return nil, fmt.Errorf("create room: %w", err)
 	}
 
-	saved, err := s.repo.Save(ctx, &domain.Message{
+	saved, err := s.repo.SaveWithOutbox(ctx, &domain.Message{
 		SenderID:   req.UserID,
 		SenderRole: domain.Human,
 		RoomID:     room.ID,
 		Content:    req.Content,
 		Tags:       req.Tags,
-	})
+	}, domain.EventNewQuestion, uuid.Nil)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
-
-	go func() {
-		publishCtx := context.WithoutCancel(ctx)
-		if err := s.notifier.PublishNewQuestion(publishCtx, saved); err != nil {
-			logrus.WithError(err).Error("failed to publish new question")
-		}
-	}()
 
 	return saved, nil
 }
@@ -83,23 +75,16 @@ func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (
 		return nil, domain.ErrNotRoomParticipant
 	}
 
-	saved, err := s.repo.Save(ctx, &domain.Message{
+	saved, err := s.repo.SaveWithOutbox(ctx, &domain.Message{
 		SenderID:   req.UserID,
 		SenderRole: domain.Human,
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	})
+	}, domain.EventFollowUp, uuid.Nil)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
-
-	go func() {
-		publishCtx := context.WithoutCancel(ctx)
-		if err := s.notifier.PublishFollowUp(publishCtx, req.RoomID, saved); err != nil {
-			logrus.WithError(err).Error("failed to publish follow-up")
-		}
-	}()
 
 	return saved, nil
 }
@@ -128,23 +113,16 @@ func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*dom
 		return nil, fmt.Errorf("validate AI msg: %w", err)
 	}
 
-	saved, err := s.repo.Save(ctx, &domain.Message{
+	saved, err := s.repo.SaveWithOutbox(ctx, &domain.Message{
 		SenderID:   req.UserID,
 		SenderRole: domain.AI,
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	})
+	}, domain.EventAIReply, room.HumanID)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
-
-	go func() {
-		publishCtx := context.WithoutCancel(ctx)
-		if err := s.notifier.PublishAIReply(publishCtx, room.HumanID, saved); err != nil {
-			logrus.WithError(err).Error("failed to publish AI reply")
-		}
-	}()
 
 	return saved, nil
 }
