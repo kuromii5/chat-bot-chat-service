@@ -16,7 +16,7 @@ import (
 type postgresRepo interface {
 	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
 	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
-	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) (oldTags []string, err error)
+	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error
 	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
 	CreateRoom(ctx context.Context, humanID uuid.UUID) (*domain.Room, error)
 	GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error)
@@ -75,21 +75,21 @@ func (r *Repo) GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int)
 	return result, err
 }
 
-func (r *Repo) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) ([]string, error) {
+func (r *Repo) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error {
 	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.UpdateProfileTags")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("db.operation", "UPDATE"),
-		attribute.String("db.table", "core.profile_tags"),
+		attribute.String("db.table", "core.profile_tags, core.outbox_events"),
 		attribute.String("user.id", userID.String()),
 	)
 
-	result, err := r.inner.UpdateProfileTags(ctx, userID, tags)
+	err := r.inner.UpdateProfileTags(ctx, userID, tags)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 	}
-	return result, err
+	return err
 }
 
 func (r *Repo) GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error) {

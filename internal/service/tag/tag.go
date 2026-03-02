@@ -18,13 +18,8 @@ func (s *Service) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags 
 		return domain.ErrInvalidTags
 	}
 
-	oldTags, err := s.repo.UpdateProfileTags(ctx, userID, tags)
-	if err != nil {
+	if err := s.repo.UpdateProfileTags(ctx, userID, tags); err != nil {
 		return fmt.Errorf("update profile tags: %w", err)
-	}
-
-	if err := s.notifier.SyncAIQueue(ctx, userID, tags, oldTags); err != nil {
-		return fmt.Errorf("sync AI queue: %w", err)
 	}
 
 	return nil

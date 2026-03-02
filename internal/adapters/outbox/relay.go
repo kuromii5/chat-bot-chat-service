@@ -24,16 +24,21 @@ type Publisher interface {
 	PublishAIReply(ctx context.Context, humanID uuid.UUID, msg *domain.Message) error
 }
 
+type QueueSyncer interface {
+	SyncAIQueue(ctx context.Context, aiID uuid.UUID, tags, oldTags []string) error
+}
+
 const fetchLimit = 100
 
 type Relay struct {
 	repo      OutboxRepo
 	publisher Publisher
+	syncer    QueueSyncer
 	interval  time.Duration
 }
 
-func NewRelay(repo OutboxRepo, publisher Publisher, interval time.Duration) *Relay {
-	return &Relay{repo: repo, publisher: publisher, interval: interval}
+func NewRelay(repo OutboxRepo, publisher Publisher, syncer QueueSyncer, interval time.Duration) *Relay {
+	return &Relay{repo: repo, publisher: publisher, syncer: syncer, interval: interval}
 }
 
 func (r *Relay) Run(ctx context.Context) {
@@ -72,7 +77,18 @@ func (r *Relay) process(ctx context.Context) {
 }
 
 func (r *Relay) dispatch(ctx context.Context, event *domain.OutboxEvent) error {
-	var payload domain.OutboxPayload
+	switch event.EventType {
+	case domain.EventNewQuestion, domain.EventFollowUp, domain.EventAIReply:
+		return r.dispatchMessage(ctx, event)
+	case domain.EventTagsSync:
+		return r.dispatchTagSync(ctx, event)
+	default:
+		return fmt.Errorf("unknown event type: %s", event.EventType)
+	}
+}
+
+func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) error {
+	var payload domain.MessagePayload
 	if err := json.Unmarshal(event.Payload, &payload); err != nil {
 		return fmt.Errorf("unmarshal payload: %w", err)
 	}
@@ -85,6 +101,15 @@ func (r *Relay) dispatch(ctx context.Context, event *domain.OutboxEvent) error {
 	case domain.EventAIReply:
 		return r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message)
 	default:
-		return fmt.Errorf("unknown event type: %s", event.EventType)
+		return fmt.Errorf("unknown message event type: %s", event.EventType)
 	}
+}
+
+func (r *Relay) dispatchTagSync(ctx context.Context, event *domain.OutboxEvent) error {
+	var payload domain.TagSyncPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return fmt.Errorf("unmarshal tag sync payload: %w", err)
+	}
+
+	return r.syncer.SyncAIQueue(ctx, payload.UserID, payload.Tags, payload.OldTags)
 }

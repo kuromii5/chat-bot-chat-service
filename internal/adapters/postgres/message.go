@@ -34,7 +34,7 @@ func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eve
 		return nil, fmt.Errorf("save message: %w", err)
 	}
 
-	payload, err := json.Marshal(domain.OutboxPayload{
+	payload, err := json.Marshal(domain.MessagePayload{
 		Message: &message,
 		HumanID: humanID,
 	})

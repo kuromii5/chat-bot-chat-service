@@ -13,6 +13,7 @@ const (
 	EventNewQuestion EventType = "new_question"
 	EventFollowUp    EventType = "follow_up"
 	EventAIReply     EventType = "ai_reply"
+	EventTagsSync    EventType = "tags_sync"
 )
 
 type EventStatus string
@@ -24,9 +25,15 @@ const (
 	EventDead       EventStatus = "dead"
 )
 
-type OutboxPayload struct {
+type MessagePayload struct {
 	Message *Message  `json:"message"`
 	HumanID uuid.UUID `json:"human_id"`
+}
+
+type TagSyncPayload struct {
+	UserID  uuid.UUID `json:"user_id"`
+	Tags    []string  `json:"tags"`
+	OldTags []string  `json:"old_tags"`
 }
 
 type OutboxEvent struct {

@@ -83,33 +83,21 @@ func (_c *MockTagRepo_GetProfileTags_Call) RunAndReturn(run func(context.Context
 }
 
 // UpdateProfileTags provides a mock function with given fields: ctx, userID, tags
-func (_m *MockTagRepo) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) ([]string, error) {
+func (_m *MockTagRepo) UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error {
 	ret := _m.Called(ctx, userID, tags)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateProfileTags")
 	}
 
-	var r0 []string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []string) ([]string, error)); ok {
-		return rf(ctx, userID, tags)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []string) []string); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []string) error); ok {
 		r0 = rf(ctx, userID, tags)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, []string) error); ok {
-		r1 = rf(ctx, userID, tags)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MockTagRepo_UpdateProfileTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProfileTags'
@@ -132,12 +120,12 @@ func (_c *MockTagRepo_UpdateProfileTags_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockTagRepo_UpdateProfileTags_Call) Return(oldTags []string, err error) *MockTagRepo_UpdateProfileTags_Call {
-	_c.Call.Return(oldTags, err)
+func (_c *MockTagRepo_UpdateProfileTags_Call) Return(_a0 error) *MockTagRepo_UpdateProfileTags_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockTagRepo_UpdateProfileTags_Call) RunAndReturn(run func(context.Context, uuid.UUID, []string) ([]string, error)) *MockTagRepo_UpdateProfileTags_Call {
+func (_c *MockTagRepo_UpdateProfileTags_Call) RunAndReturn(run func(context.Context, uuid.UUID, []string) error) *MockTagRepo_UpdateProfileTags_Call {
 	_c.Call.Return(run)
 	return _c
 }

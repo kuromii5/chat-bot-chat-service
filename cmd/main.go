@@ -76,11 +76,11 @@ func main() {
 
 	tracingPG := tracingadapter.NewRepo(pg)
 
-	relay := outboxrelay.NewRelay(tracingPG, rmq, 2*time.Second)
+	relay := outboxrelay.NewRelay(tracingPG, rmq, rmq, 2*time.Second)
 	go relay.Run(ctx)
 
 	msgSvc := msgservice.NewService(tracingPG, tracingPG)
-	tagSvc := tagservice.NewService(tracingPG, cache, rmq)
+	tagSvc := tagservice.NewService(tracingPG, cache)
 	roomSvc := roomservice.NewService(tracingPG, rmq)
 
 	router := httpserver.NewRouter(
