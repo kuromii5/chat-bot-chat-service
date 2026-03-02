@@ -11,6 +11,7 @@ import (
 
 	"github.com/kuromii5/chat-bot-chat-service/config"
 	badgercache "github.com/kuromii5/chat-bot-chat-service/internal/adapters/badger"
+	outboxrelay "github.com/kuromii5/chat-bot-chat-service/internal/adapters/outbox"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 	tracingadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/tracing"
@@ -75,8 +76,11 @@ func main() {
 
 	tracingPG := tracingadapter.NewRepo(pg)
 
-	msgSvc := msgservice.NewService(tracingPG, tracingPG, rmq)
-	tagSvc := tagservice.NewService(tracingPG, cache, rmq)
+	relay := outboxrelay.NewRelay(tracingPG, rmq, rmq, 2*time.Second)
+	go relay.Run(ctx)
+
+	msgSvc := msgservice.NewService(tracingPG, tracingPG)
+	tagSvc := tagservice.NewService(tracingPG, cache)
 	roomSvc := roomservice.NewService(tracingPG, rmq)
 
 	router := httpserver.NewRouter(

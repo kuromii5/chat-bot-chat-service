@@ -19,8 +19,24 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26
+
+      - name: Clone migrations
+        run: git clone https://github.com/kuromii5/chat-bot-migrations.git ../chat-bot-migrations
+
+      - name: Run integration tests
+        run: go test ./tests/integration/ -tags=integration -v -count=1
+
   build-and-push:
-    needs: test
+    needs: [test, integration-test]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

@@ -29,25 +29,26 @@ type Message struct {
 	CreatedAt  time.Time      `db:"created_at"`
 }
 
-func ValidateHumanMsg(lastMessages []*Message) error {
-	if len(lastMessages) < HumanSequentialMessageLimit {
-		return nil
-	}
-
-	humanCount := 0
-	for i := range HumanSequentialMessageLimit {
-		if lastMessages[i].SenderRole == Human {
-			humanCount++
-		} else {
-			return nil
-		}
-	}
-
-	if humanCount >= HumanSequentialMessageLimit {
-		return ErrRateLimitExceeded
-	}
-	return nil
-}
+// TODO: implement rate limiting with cache or persistent storage
+// func ValidateHumanMsg(lastMessages []*Message) error {
+// 	if len(lastMessages) < HumanSequentialMessageLimit {
+// 		return nil
+// 	}
+//
+// 	humanCount := 0
+// 	for i := range HumanSequentialMessageLimit {
+// 		if lastMessages[i].SenderRole == Human {
+// 			humanCount++
+// 		} else {
+// 			return nil
+// 		}
+// 	}
+//
+// 	if humanCount >= HumanSequentialMessageLimit {
+// 		return ErrRateLimitExceeded
+// 	}
+// 	return nil
+// }
 
 func ValidateAIMsg(lastMessages []*Message) error {
 	if len(lastMessages) < AISequentialMessageLimit {

@@ -84,29 +84,29 @@ func (_c *MockMessageRepo_GetLastMessages_Call) RunAndReturn(run func(context.Co
 	return _c
 }
 
-// Save provides a mock function with given fields: ctx, _a1
-func (_m *MockMessageRepo) Save(ctx context.Context, _a1 *domain.Message) (*domain.Message, error) {
-	ret := _m.Called(ctx, _a1)
+// SaveWithOutbox provides a mock function with given fields: ctx, _a1, eventType, humanID
+func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error) {
+	ret := _m.Called(ctx, _a1, eventType, humanID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Save")
+		panic("no return value specified for SaveWithOutbox")
 	}
 
 	var r0 *domain.Message
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message) (*domain.Message, error)); ok {
-		return rf(ctx, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) (*domain.Message, error)); ok {
+		return rf(ctx, _a1, eventType, humanID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message) *domain.Message); ok {
-		r0 = rf(ctx, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) *domain.Message); ok {
+		r0 = rf(ctx, _a1, eventType, humanID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Message)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *domain.Message) error); ok {
-		r1 = rf(ctx, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) error); ok {
+		r1 = rf(ctx, _a1, eventType, humanID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -114,31 +114,33 @@ func (_m *MockMessageRepo) Save(ctx context.Context, _a1 *domain.Message) (*doma
 	return r0, r1
 }
 
-// MockMessageRepo_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
-type MockMessageRepo_Save_Call struct {
+// MockMessageRepo_SaveWithOutbox_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveWithOutbox'
+type MockMessageRepo_SaveWithOutbox_Call struct {
 	*mock.Call
 }
 
-// Save is a helper method to define mock.On call
+// SaveWithOutbox is a helper method to define mock.On call
 //   - ctx context.Context
 //   - _a1 *domain.Message
-func (_e *MockMessageRepo_Expecter) Save(ctx interface{}, _a1 interface{}) *MockMessageRepo_Save_Call {
-	return &MockMessageRepo_Save_Call{Call: _e.mock.On("Save", ctx, _a1)}
+//   - eventType domain.EventType
+//   - humanID uuid.UUID
+func (_e *MockMessageRepo_Expecter) SaveWithOutbox(ctx interface{}, _a1 interface{}, eventType interface{}, humanID interface{}) *MockMessageRepo_SaveWithOutbox_Call {
+	return &MockMessageRepo_SaveWithOutbox_Call{Call: _e.mock.On("SaveWithOutbox", ctx, _a1, eventType, humanID)}
 }
 
-func (_c *MockMessageRepo_Save_Call) Run(run func(ctx context.Context, _a1 *domain.Message)) *MockMessageRepo_Save_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) Run(run func(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID)) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*domain.Message))
+		run(args[0].(context.Context), args[1].(*domain.Message), args[2].(domain.EventType), args[3].(uuid.UUID))
 	})
 	return _c
 }
 
-func (_c *MockMessageRepo_Save_Call) Return(_a0 *domain.Message, _a1 error) *MockMessageRepo_Save_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) Return(_a0 *domain.Message, _a1 error) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockMessageRepo_Save_Call) RunAndReturn(run func(context.Context, *domain.Message) (*domain.Message, error)) *MockMessageRepo_Save_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) RunAndReturn(run func(context.Context, *domain.Message, domain.EventType, uuid.UUID) (*domain.Message, error)) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Return(run)
 	return _c
 }

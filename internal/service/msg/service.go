@@ -11,7 +11,7 @@ import (
 )
 
 type MessageRepo interface {
-	Save(ctx context.Context, msg *domain.Message) (*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
 	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
 }
 
@@ -20,18 +20,11 @@ type RoomRepo interface {
 	GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error)
 }
 
-type Notifier interface {
-	PublishNewQuestion(ctx context.Context, msg *domain.Message) error
-	PublishAIReply(ctx context.Context, humanID uuid.UUID, msg *domain.Message) error
-	PublishFollowUp(ctx context.Context, roomID uuid.UUID, msg *domain.Message) error
-}
-
 type Service struct {
 	repo     MessageRepo
 	roomRepo RoomRepo
-	notifier Notifier
 }
 
-func NewService(repo MessageRepo, roomRepo RoomRepo, notifier Notifier) *Service {
-	return &Service{repo: repo, roomRepo: roomRepo, notifier: notifier}
+func NewService(repo MessageRepo, roomRepo RoomRepo) *Service {
+	return &Service{repo: repo, roomRepo: roomRepo}
 }

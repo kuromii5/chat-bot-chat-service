@@ -31,7 +31,7 @@ const (
 	`
 	checkRoomQuery = `
 		SELECT status,
-		       (human_id = $2 OR ai_id = $2) AS is_participant
+		       (human_id = $2 OR COALESCE(ai_id = $2, false)) AS is_participant
 		FROM core.rooms
 		WHERE id = $1;
 	`
@@ -63,5 +63,76 @@ const (
 	`
 	getProfileTagsQuery = `
 		SELECT tag_name FROM core.profile_tags WHERE user_id = $1;
+	`
+)
+
+// outbox queries
+const (
+	saveOutboxEventQuery = `
+		INSERT INTO core.outbox_events (
+			aggregate_type
+			, aggregate_id
+			, event_type
+			, payload
+			, status
+		) VALUES ($1, $2, $3, $4, 'pending')
+		RETURNING id
+		, aggregate_type
+		, aggregate_id
+		, event_type
+		, status
+		, attempts
+		, max_attempts
+		, created_at
+	`
+
+	fetchPendingQuery = `
+		WITH locked AS (
+			SELECT id FROM core.outbox_events
+			WHERE status = 'pending'
+				AND next_retry_at <= NOW()
+			ORDER BY next_retry_at
+			LIMIT $1
+			FOR UPDATE SKIP LOCKED
+		)
+
+		UPDATE core.outbox_events
+		SET status = 'processing'
+		FROM locked
+		WHERE core.outbox_events.id = locked.id
+		RETURNING
+			core.outbox_events.id
+			, aggregate_type
+			, aggregate_id
+			, event_type
+            , payload
+			, attempts
+			, max_attempts
+			, next_retry_at
+			, last_error
+			, created_at
+	`
+
+	markPublishedQuery = `
+		UPDATE core.outbox_events
+		SET status = 'published', published_at = NOW()
+		WHERE id = $1
+	`
+
+	markFailedQuery = `
+		UPDATE core.outbox_events
+		SET
+			attempts = attempts + 1,
+			last_error = $2,
+			status = CASE
+						WHEN attempts + 1 >= max_attempts THEN 'dead'
+						ELSE 'pending'
+					 END,
+			next_retry_at = CASE
+						WHEN attempts + 1 < max_attempts
+						THEN NOW() + (POWER(2, attempts + 1) || ' seconds')::INTERVAL
+						ELSE next_retry_at
+					 END	
+		WHERE id = $1
 	`
 )
