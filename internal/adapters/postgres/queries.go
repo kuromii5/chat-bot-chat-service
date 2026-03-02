@@ -31,7 +31,7 @@ const (
 	`
 	checkRoomQuery = `
 		SELECT status,
-		       (human_id = $2 OR ai_id = $2) AS is_participant
+		       (human_id = $2 OR COALESCE(ai_id = $2, false)) AS is_participant
 		FROM core.rooms
 		WHERE id = $1;
 	`

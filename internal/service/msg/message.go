@@ -66,7 +66,7 @@ func (s *Service) sendHumanNewQuestion(ctx context.Context, req CreateMessageReq
 func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
 	room, err := s.roomRepo.GetRoom(ctx, req.RoomID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get room: %w", err)
 	}
 	if room.Status != domain.RoomActive {
 		return nil, domain.ErrRoomNotActive
@@ -96,7 +96,7 @@ func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*dom
 
 	room, err := s.roomRepo.GetRoom(ctx, req.RoomID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get room: %w", err)
 	}
 	if room.Status != domain.RoomActive {
 		return nil, domain.ErrRoomNotActive
