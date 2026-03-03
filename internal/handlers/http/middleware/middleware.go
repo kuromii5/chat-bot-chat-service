@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/jwt"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
+	"github.com/kuromii5/chat-bot-shared/jwt"
+	"github.com/kuromii5/chat-bot-shared/wrapper"
 )
 
 type contextKey string

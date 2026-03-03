@@ -50,7 +50,7 @@ formatters:
     - goimports
   settings:
     goimports:
-      local-prefixes: [ "github.com/kuromii5/chat-bot-chat-service" ]
+      local-prefixes: [ "github.com/kuromii5/chat-bot-chat-service", "github.com/kuromii5/chat-bot-shared" ]
 
 issues:
   max-issues-per-linter: 0

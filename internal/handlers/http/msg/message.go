@@ -9,8 +9,8 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
 	msgservice "github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
+	"github.com/kuromii5/chat-bot-shared/validator"
+	"github.com/kuromii5/chat-bot-shared/wrapper"
 )
 
 type createMessageRequest struct {

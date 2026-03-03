@@ -15,6 +15,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 	tracingadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/tracing"
+	apperrors "github.com/kuromii5/chat-bot-chat-service/internal/errors"
 	httpserver "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http"
 	msghandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/msg"
 	roomhandler "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/room"
@@ -24,14 +25,16 @@ import (
 	roomservice "github.com/kuromii5/chat-bot-chat-service/internal/service/room"
 	tagservice "github.com/kuromii5/chat-bot-chat-service/internal/service/tag"
 	tracingsvc "github.com/kuromii5/chat-bot-chat-service/internal/service/tracing"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/tracing"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
+	"github.com/kuromii5/chat-bot-shared/tracing"
+	"github.com/kuromii5/chat-bot-shared/validator"
+	"github.com/kuromii5/chat-bot-shared/wrapper"
 )
 
 func main() {
 	cfg := config.MustLoad()
 	setupLogger(cfg.Log.Level)
 	validator.Init()
+	wrapper.RegisterErrors(apperrors.Registry)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()

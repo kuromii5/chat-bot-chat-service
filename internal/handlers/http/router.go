@@ -10,7 +10,7 @@ import (
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	httpMiddleware "github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/wrapper"
+	"github.com/kuromii5/chat-bot-shared/wrapper"
 )
 
 type MessageHandler interface {

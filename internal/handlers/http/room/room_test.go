@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -14,9 +15,16 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
+	apperrors "github.com/kuromii5/chat-bot-chat-service/internal/errors"
 	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/middleware"
 	"github.com/kuromii5/chat-bot-chat-service/internal/handlers/http/room/mocks"
+	"github.com/kuromii5/chat-bot-shared/wrapper"
 )
+
+func TestMain(m *testing.M) {
+	wrapper.RegisterErrors(apperrors.Registry)
+	os.Exit(m.Run())
+}
 
 func withUserAndRoom(ctx context.Context, userID uuid.UUID, roomID string) context.Context {
 	ctx = context.WithValue(ctx, middleware.UserIDKey, userID)

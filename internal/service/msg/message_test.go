@@ -15,7 +15,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 	"github.com/kuromii5/chat-bot-chat-service/internal/service/msg"
 	"github.com/kuromii5/chat-bot-chat-service/internal/service/msg/mocks"
-	"github.com/kuromii5/chat-bot-chat-service/pkg/validator"
+	"github.com/kuromii5/chat-bot-shared/validator"
 )
 
 var errDB = errors.New("db failure")
