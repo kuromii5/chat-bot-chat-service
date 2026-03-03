@@ -27,7 +27,7 @@ const (
 		UPDATE core.rooms
 		SET ai_id = $1, status = 'active'
 		WHERE id = $2 AND ai_id IS NULL
-		RETURNING id;
+		RETURNING id, human_id;
 	`
 	checkRoomQuery = `
 		SELECT status,

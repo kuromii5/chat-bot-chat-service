@@ -38,8 +38,9 @@ type TagSyncPayload struct {
 }
 
 type RoomClaimedPayload struct {
-	RoomID uuid.UUID `json:"room_id"`
-	AiID   uuid.UUID `json:"ai_id"`
+	RoomID  uuid.UUID `json:"room_id"`
+	AiID    uuid.UUID `json:"ai_id"`
+	HumanID uuid.UUID `json:"human_id"`
 }
 
 type OutboxEvent struct {

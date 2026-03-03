@@ -11,6 +11,7 @@ import (
 
 	"github.com/kuromii5/chat-bot-chat-service/config"
 	badgercache "github.com/kuromii5/chat-bot-chat-service/internal/adapters/badger"
+	kafkaproducer "github.com/kuromii5/chat-bot-chat-service/internal/adapters/kafka"
 	outboxrelay "github.com/kuromii5/chat-bot-chat-service/internal/adapters/outbox"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
@@ -77,11 +78,18 @@ func main() {
 		logrus.Fatal("Failed to connect to rabbitmq", err)
 	}
 
+	kafkaProd := kafkaproducer.NewProducer(cfg.Kafka.Brokers)
+	defer func() {
+		if err := kafkaProd.Close(); err != nil {
+			logrus.WithError(err).Error("Kafka producer close failed")
+		}
+	}()
+
 	tracingPG := tracingadapter.NewRepo(pg)
 
 	tracingBroker := tracingadapter.NewBroker(rmq)
 
-	relay := outboxrelay.NewRelay(tracingPG, tracingBroker, tracingBroker, tracingBroker, 2*time.Second)
+	relay := outboxrelay.NewRelay(tracingPG, tracingBroker, tracingBroker, tracingBroker, kafkaProd, 2*time.Second)
 	go relay.Run(ctx)
 
 	msgSvc := msgservice.NewService(tracingPG, tracingPG)

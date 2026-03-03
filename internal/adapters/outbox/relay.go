@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	kafkaadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/kafka"
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
@@ -32,6 +33,10 @@ type Binder interface {
 	BindRoomToAI(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error
 }
 
+type KafkaNotifier interface {
+	PublishNotification(ctx context.Context, event kafkaadapter.NotificationEvent) error
+}
+
 const fetchLimit = 100
 
 type Relay struct {
@@ -39,11 +44,12 @@ type Relay struct {
 	publisher Publisher
 	syncer    QueueSyncer
 	binder    Binder
+	kafka     KafkaNotifier
 	interval  time.Duration
 }
 
-func NewRelay(repo OutboxRepo, publisher Publisher, syncer QueueSyncer, binder Binder, interval time.Duration) *Relay {
-	return &Relay{repo: repo, publisher: publisher, syncer: syncer, binder: binder, interval: interval}
+func NewRelay(repo OutboxRepo, publisher Publisher, syncer QueueSyncer, binder Binder, kafka KafkaNotifier, interval time.Duration) *Relay {
+	return &Relay{repo: repo, publisher: publisher, syncer: syncer, binder: binder, kafka: kafka, interval: interval}
 }
 
 func (r *Relay) Run(ctx context.Context) {
@@ -115,6 +121,15 @@ func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) 
 		if err := r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message); err != nil {
 			return fmt.Errorf("PublishAIReply: %w", err)
 		}
+		r.notifyKafka(ctx, kafkaadapter.NotificationEvent{
+			ID:          event.ID,
+			Type:        event.EventType,
+			RecipientID: payload.HumanID,
+			RoomID:      payload.Message.RoomID,
+			SenderID:    payload.Message.SenderID,
+			Text:        payload.Message.Content,
+			OccurredAt:  payload.Message.CreatedAt,
+		})
 		return nil
 	default:
 		return fmt.Errorf("unknown message event type: %s", event.EventType)
@@ -142,5 +157,19 @@ func (r *Relay) dispatchRoomClaimed(ctx context.Context, event *domain.OutboxEve
 	if err := r.binder.BindRoomToAI(ctx, payload.RoomID, payload.AiID); err != nil {
 		return fmt.Errorf("BindRoomToAI: %w", err)
 	}
+	r.notifyKafka(ctx, kafkaadapter.NotificationEvent{
+		ID:          event.ID,
+		Type:        event.EventType,
+		RecipientID: payload.HumanID,
+		RoomID:      payload.RoomID,
+		SenderID:    payload.AiID,
+		OccurredAt:  event.CreatedAt,
+	})
 	return nil
+}
+
+func (r *Relay) notifyKafka(ctx context.Context, event kafkaadapter.NotificationEvent) {
+	if err := r.kafka.PublishNotification(ctx, event); err != nil {
+		logrus.WithError(err).WithField("event_id", event.ID).Warn("outbox: kafka notification failed (best-effort)")
+	}
 }
