@@ -22,29 +22,19 @@ func TestClaimRoom(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		setup   func(repo *mocks.MockRoomRepo, binder *mocks.MockBinder)
+		setup   func(repo *mocks.MockRoomRepo)
 		wantErr error
 	}{
 		{
 			name: "success",
-			setup: func(repo *mocks.MockRoomRepo, binder *mocks.MockBinder) {
+			setup: func(repo *mocks.MockRoomRepo) {
 				repo.EXPECT().ClaimRoom(mock.Anything, roomID, aiID).Return(nil)
-				binder.EXPECT().BindRoomToAI(mock.Anything, roomID, aiID).Return(nil)
 			},
 		},
 		{
-			name: "repo error - binder not called",
-			setup: func(repo *mocks.MockRoomRepo, _ *mocks.MockBinder) {
+			name: "repo error",
+			setup: func(repo *mocks.MockRoomRepo) {
 				repo.EXPECT().ClaimRoom(mock.Anything, mock.Anything, mock.Anything).
-					Return(errDB)
-			},
-			wantErr: errDB,
-		},
-		{
-			name: "binder error",
-			setup: func(repo *mocks.MockRoomRepo, binder *mocks.MockBinder) {
-				repo.EXPECT().ClaimRoom(mock.Anything, mock.Anything, mock.Anything).Return(nil)
-				binder.EXPECT().BindRoomToAI(mock.Anything, mock.Anything, mock.Anything).
 					Return(errDB)
 			},
 			wantErr: errDB,
@@ -54,11 +44,10 @@ func TestClaimRoom(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := mocks.NewMockRoomRepo(t)
-			binder := mocks.NewMockBinder(t)
-			svc := room.NewService(repo, binder)
+			svc := room.NewService(repo)
 
 			if tt.setup != nil {
-				tt.setup(repo, binder)
+				tt.setup(repo)
 			}
 
 			err := svc.ClaimRoom(context.Background(), roomID, aiID)
@@ -100,7 +89,7 @@ func TestCloseRoom(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := mocks.NewMockRoomRepo(t)
-			svc := room.NewService(repo, nil)
+			svc := room.NewService(repo)
 
 			if tt.setup != nil {
 				tt.setup(repo)

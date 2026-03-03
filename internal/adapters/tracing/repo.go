@@ -148,7 +148,7 @@ func (r *Repo) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) 
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("db.operation", "UPDATE"),
-		attribute.String("db.table", "core.rooms"),
+		attribute.String("db.table", "core.rooms, core.outbox_events"),
 		attribute.String("room.id", roomID.String()),
 		attribute.String("ai.id", aiID.String()),
 	)

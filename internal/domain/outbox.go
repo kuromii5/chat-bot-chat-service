@@ -14,6 +14,7 @@ const (
 	EventFollowUp    EventType = "follow_up"
 	EventAIReply     EventType = "ai_reply"
 	EventTagsSync    EventType = "tags_sync"
+	EventRoomClaimed EventType = "room_claimed"
 )
 
 type EventStatus string
@@ -34,6 +35,11 @@ type TagSyncPayload struct {
 	UserID  uuid.UUID `json:"user_id"`
 	Tags    []string  `json:"tags"`
 	OldTags []string  `json:"old_tags"`
+}
+
+type RoomClaimedPayload struct {
+	RoomID uuid.UUID `json:"room_id"`
+	AiID   uuid.UUID `json:"ai_id"`
 }
 
 type OutboxEvent struct {

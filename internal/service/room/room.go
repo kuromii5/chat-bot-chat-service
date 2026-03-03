@@ -11,9 +11,6 @@ func (s *Service) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUI
 	if err := s.repo.ClaimRoom(ctx, roomID, aiID); err != nil {
 		return fmt.Errorf("claim room: %w", err)
 	}
-	if err := s.binder.BindRoomToAI(ctx, roomID, aiID); err != nil {
-		return fmt.Errorf("bind room to AI queue: %w", err)
-	}
 	return nil
 }
 

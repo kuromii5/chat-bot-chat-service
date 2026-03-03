@@ -16,15 +16,10 @@ type RoomRepo interface {
 	GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error)
 }
 
-type Binder interface {
-	BindRoomToAI(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error
-}
-
 type Service struct {
-	repo   RoomRepo
-	binder Binder
+	repo RoomRepo
 }
 
-func NewService(repo RoomRepo, binder Binder) *Service {
-	return &Service{repo: repo, binder: binder}
+func NewService(repo RoomRepo) *Service {
+	return &Service{repo: repo}
 }

@@ -28,17 +28,22 @@ type QueueSyncer interface {
 	SyncAIQueue(ctx context.Context, aiID uuid.UUID, tags, oldTags []string) error
 }
 
+type Binder interface {
+	BindRoomToAI(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error
+}
+
 const fetchLimit = 100
 
 type Relay struct {
 	repo      OutboxRepo
 	publisher Publisher
 	syncer    QueueSyncer
+	binder    Binder
 	interval  time.Duration
 }
 
-func NewRelay(repo OutboxRepo, publisher Publisher, syncer QueueSyncer, interval time.Duration) *Relay {
-	return &Relay{repo: repo, publisher: publisher, syncer: syncer, interval: interval}
+func NewRelay(repo OutboxRepo, publisher Publisher, syncer QueueSyncer, binder Binder, interval time.Duration) *Relay {
+	return &Relay{repo: repo, publisher: publisher, syncer: syncer, binder: binder, interval: interval}
 }
 
 func (r *Relay) Run(ctx context.Context) {
@@ -82,6 +87,8 @@ func (r *Relay) dispatch(ctx context.Context, event *domain.OutboxEvent) error {
 		return r.dispatchMessage(ctx, event)
 	case domain.EventTagsSync:
 		return r.dispatchTagSync(ctx, event)
+	case domain.EventRoomClaimed:
+		return r.dispatchRoomClaimed(ctx, event)
 	default:
 		return fmt.Errorf("unknown event type: %s", event.EventType)
 	}
@@ -112,4 +119,13 @@ func (r *Relay) dispatchTagSync(ctx context.Context, event *domain.OutboxEvent) 
 	}
 
 	return r.syncer.SyncAIQueue(ctx, payload.UserID, payload.Tags, payload.OldTags)
+}
+
+func (r *Relay) dispatchRoomClaimed(ctx context.Context, event *domain.OutboxEvent) error {
+	var payload domain.RoomClaimedPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return fmt.Errorf("unmarshal room claimed payload: %w", err)
+	}
+
+	return r.binder.BindRoomToAI(ctx, payload.RoomID, payload.AiID)
 }

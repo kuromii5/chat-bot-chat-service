@@ -14,7 +14,6 @@ packages:
   github.com/kuromii5/chat-bot-chat-service/internal/service/room:
     interfaces:
       RoomRepo:
-      Binder:
   github.com/kuromii5/chat-bot-chat-service/internal/service/tag:
     interfaces:
       TagRepo:

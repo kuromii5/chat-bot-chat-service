@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -20,13 +21,40 @@ func (pg *postgres) CreateRoom(ctx context.Context, humanID uuid.UUID) (*domain.
 }
 
 func (pg *postgres) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.UUID) error {
-	var id uuid.UUID
-	err := pg.DB.GetContext(ctx, &id, claimRoomQuery, aiID, roomID)
+	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
+		return fmt.Errorf("tx begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var id uuid.UUID
+	if err := tx.GetContext(ctx, &id, claimRoomQuery, aiID, roomID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.ErrRoomAlreadyClaimed
 		}
 		return fmt.Errorf("claim room: %w", err)
+	}
+
+	payload, err := json.Marshal(domain.RoomClaimedPayload{
+		RoomID: roomID,
+		AiID:   aiID,
+	})
+	if err != nil {
+		return fmt.Errorf("marshal room claimed payload: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		saveOutboxEventQuery,
+		"room",
+		roomID,
+		domain.EventRoomClaimed,
+		payload,
+	); err != nil {
+		return fmt.Errorf("save outbox event: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("tx commit: %w", err)
 	}
 	return nil
 }

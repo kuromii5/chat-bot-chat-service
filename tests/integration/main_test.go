@@ -17,22 +17,29 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	tcrmq "github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/kuromii5/chat-bot-chat-service/config"
 	pgadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/postgres"
+	rmqadapter "github.com/kuromii5/chat-bot-chat-service/internal/adapters/rabbitmq"
 )
 
 const (
 	testDBName   = "test_chat"
 	testUser     = "test"
 	testPassword = "test"
+
+	testRMQUser     = "guest"
+	testRMQPassword = "guest"
+	testExchange    = "test_exchange"
 )
 
 // shared across all tests in the package
 var (
 	testDB   *sqlx.DB
 	testRepo testRepoInterface
+	testRMQ  *rmqadapter.RabbitMQ
 )
 
 // testRepoInterface combines all adapter methods for convenience.
@@ -45,7 +52,8 @@ type testRepoInterface interface {
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	container, connStr, err := startPostgres(ctx)
+	// --- Postgres ---
+	pgContainer, connStr, err := startPostgres(ctx)
 	if err != nil {
 		log.Fatalf("start postgres container: %v", err)
 	}
@@ -59,12 +67,11 @@ func TestMain(m *testing.M) {
 		log.Fatalf("apply migrations: %v", err)
 	}
 
-	// create repo via adapter's New() using mapped port
-	host, err := container.Host(ctx)
+	host, err := pgContainer.Host(ctx)
 	if err != nil {
 		log.Fatalf("get container host: %v", err)
 	}
-	mappedPort, err := container.MappedPort(ctx, "5432")
+	mappedPort, err := pgContainer.MappedPort(ctx, "5432")
 	if err != nil {
 		log.Fatalf("get mapped port: %v", err)
 	}
@@ -82,10 +89,26 @@ func TestMain(m *testing.M) {
 	}
 	testRepo = repo
 
+	// --- RabbitMQ ---
+	rmqContainer, amqpURL, err := startRabbitMQ(ctx)
+	if err != nil {
+		log.Fatalf("start rabbitmq container: %v", err)
+	}
+
+	testRMQ, err = rmqadapter.New(config.RabbitMQConfig{
+		URL:      amqpURL,
+		Exchange: testExchange,
+	})
+	if err != nil {
+		log.Fatalf("create rabbitmq adapter: %v", err)
+	}
+
 	code := m.Run()
 
+	testRMQ.Close()
 	testDB.Close()
-	container.Terminate(ctx)
+	pgContainer.Terminate(ctx)
+	rmqContainer.Terminate(ctx)
 	os.Exit(code)
 }
 
@@ -111,6 +134,24 @@ func startPostgres(ctx context.Context) (testcontainers.Container, string, error
 	}
 
 	return container, connStr, nil
+}
+
+func startRabbitMQ(ctx context.Context) (testcontainers.Container, string, error) {
+	container, err := tcrmq.Run(ctx,
+		"rabbitmq:3-management-alpine",
+		tcrmq.WithAdminUsername(testRMQUser),
+		tcrmq.WithAdminPassword(testRMQPassword),
+	)
+	if err != nil {
+		return nil, "", fmt.Errorf("run rabbitmq container: %w", err)
+	}
+
+	amqpURL, err := container.AmqpURL(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("get amqp url: %w", err)
+	}
+
+	return container, amqpURL, nil
 }
 
 func applyMigrations(_ context.Context, db *sqlx.DB) error {

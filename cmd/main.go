@@ -76,12 +76,14 @@ func main() {
 
 	tracingPG := tracingadapter.NewRepo(pg)
 
-	relay := outboxrelay.NewRelay(tracingPG, rmq, rmq, 2*time.Second)
+	tracingBroker := tracingadapter.NewBroker(rmq)
+
+	relay := outboxrelay.NewRelay(tracingPG, tracingBroker, tracingBroker, tracingBroker, 2*time.Second)
 	go relay.Run(ctx)
 
 	msgSvc := msgservice.NewService(tracingPG, tracingPG)
 	tagSvc := tagservice.NewService(tracingPG, cache)
-	roomSvc := roomservice.NewService(tracingPG, rmq)
+	roomSvc := roomservice.NewService(tracingPG)
 
 	router := httpserver.NewRouter(
 		msghandler.NewHandler(tracingsvc.NewMsgService(msgSvc)),
