@@ -34,8 +34,7 @@ func TestClaimRoom(t *testing.T) {
 		{
 			name: "repo error",
 			setup: func(repo *mocks.MockRoomRepo) {
-				repo.EXPECT().ClaimRoom(mock.Anything, mock.Anything, mock.Anything).
-					Return(errDB)
+				repo.EXPECT().ClaimRoom(mock.Anything, mock.Anything, mock.Anything).Return(errDB)
 			},
 			wantErr: errDB,
 		},
@@ -79,8 +78,7 @@ func TestCloseRoom(t *testing.T) {
 		{
 			name: "error",
 			setup: func(repo *mocks.MockRoomRepo) {
-				repo.EXPECT().CloseRoom(mock.Anything, mock.Anything, mock.Anything).
-					Return(errDB)
+				repo.EXPECT().CloseRoom(mock.Anything, mock.Anything, mock.Anything).Return(errDB)
 			},
 			wantErr: errDB,
 		},

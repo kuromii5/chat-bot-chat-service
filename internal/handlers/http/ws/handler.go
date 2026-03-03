@@ -86,7 +86,9 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, "token expired"),
 			time.Now().Add(writeWait),
 		)
-		conn.Close()
+		if closeErr := conn.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Debug("websocket close")
+		}
 	}()
 
 	go func() {

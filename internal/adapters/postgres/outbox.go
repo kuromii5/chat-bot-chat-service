@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 

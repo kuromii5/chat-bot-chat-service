@@ -102,11 +102,20 @@ func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) 
 
 	switch event.EventType {
 	case domain.EventNewQuestion:
-		return r.publisher.PublishNewQuestion(ctx, payload.Message)
+		if err := r.publisher.PublishNewQuestion(ctx, payload.Message); err != nil {
+			return fmt.Errorf("PublishNewQuestion: %w", err)
+		}
+		return nil
 	case domain.EventFollowUp:
-		return r.publisher.PublishFollowUp(ctx, payload.Message.RoomID, payload.Message)
+		if err := r.publisher.PublishFollowUp(ctx, payload.Message.RoomID, payload.Message); err != nil {
+			return fmt.Errorf("PublishFollowUp: %w", err)
+		}
+		return nil
 	case domain.EventAIReply:
-		return r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message)
+		if err := r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message); err != nil {
+			return fmt.Errorf("PublishAIReply: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown message event type: %s", event.EventType)
 	}
@@ -118,7 +127,10 @@ func (r *Relay) dispatchTagSync(ctx context.Context, event *domain.OutboxEvent) 
 		return fmt.Errorf("unmarshal tag sync payload: %w", err)
 	}
 
-	return r.syncer.SyncAIQueue(ctx, payload.UserID, payload.Tags, payload.OldTags)
+	if err := r.syncer.SyncAIQueue(ctx, payload.UserID, payload.Tags, payload.OldTags); err != nil {
+		return fmt.Errorf("SyncAIQueue: %w", err)
+	}
+	return nil
 }
 
 func (r *Relay) dispatchRoomClaimed(ctx context.Context, event *domain.OutboxEvent) error {
@@ -127,5 +139,8 @@ func (r *Relay) dispatchRoomClaimed(ctx context.Context, event *domain.OutboxEve
 		return fmt.Errorf("unmarshal room claimed payload: %w", err)
 	}
 
-	return r.binder.BindRoomToAI(ctx, payload.RoomID, payload.AiID)
+	if err := r.binder.BindRoomToAI(ctx, payload.RoomID, payload.AiID); err != nil {
+		return fmt.Errorf("BindRoomToAI: %w", err)
+	}
+	return nil
 }

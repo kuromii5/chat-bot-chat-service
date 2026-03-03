@@ -29,6 +29,9 @@ linters:
     - wrapcheck
     - copyloopvar
     - nilerr
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
   exclusions:
     generated: strict
     warn-unused: true
@@ -44,6 +47,10 @@ linters:
           - gocyclo
           - errcheck
           - varnamelen
+          - dupl
+      - path: internal/.*/tracing/
+        linters:
+          - wrapcheck
 
 formatters:
   enable:

@@ -18,7 +18,9 @@ func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eve
 	if err != nil {
 		return nil, fmt.Errorf("tx begin: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	var message domain.Message
 	if err := tx.GetContext(
