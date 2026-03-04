@@ -14,8 +14,8 @@ import (
 )
 
 type messageRepo interface {
-	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
-	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error)
+	GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error)
 }
 
 func TestSaveWithOutbox_Success(t *testing.T) {
@@ -31,7 +31,7 @@ func TestSaveWithOutbox_Success(t *testing.T) {
 		RoomID:     room.ID,
 		Content:    "Hello, world!",
 		Tags:       []string{"backend", "frontend"},
-	}, domain.EventNewQuestion, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, saved.ID)
@@ -48,7 +48,7 @@ func TestSaveWithOutbox_Success(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
-func TestGetLastMessages_Success(t *testing.T) {
+func TestGetLastMessage_Success(t *testing.T) {
 	truncateAll(t)
 	humanID := createTestUser(t, "msg_human2", "Human")
 	aiID := createTestUser(t, "msg_ai2", "AI")
@@ -58,41 +58,37 @@ func TestGetLastMessages_Success(t *testing.T) {
 	err = testRepo.ClaimRoom(context.Background(), room.ID, aiID)
 	require.NoError(t, err)
 
-	// Send 3 messages
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: humanID, SenderRole: domain.Human, RoomID: room.ID,
 		Content: "first", Tags: []string{"backend"},
-	}, domain.EventNewQuestion, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
 	require.NoError(t, err)
 
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: aiID, SenderRole: domain.AI, RoomID: room.ID,
 		Content: "second", Tags: []string{},
-	}, domain.EventAIReply, humanID)
+	}, domain.EventAIReply, humanID, uuid.Nil)
 	require.NoError(t, err)
 
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: humanID, SenderRole: domain.Human, RoomID: room.ID,
 		Content: "third", Tags: []string{},
-	}, domain.EventFollowUp, uuid.Nil)
+	}, domain.EventHumanFollowUp, uuid.Nil, aiID)
 	require.NoError(t, err)
 
-	// Get last 2 — should be in DESC order (third, second)
-	msgs, err := testRepo.GetLastMessages(context.Background(), room.ID, 2)
+	msg, err := testRepo.GetLastMessage(context.Background(), room.ID)
 	require.NoError(t, err)
-	require.Len(t, msgs, 2)
-	assert.Equal(t, "third", msgs[0].Content)
-	assert.Equal(t, "second", msgs[1].Content)
+	assert.Equal(t, "third", msg.Content)
+	assert.Equal(t, domain.Human, msg.SenderRole)
 }
 
-func TestGetLastMessages_Empty(t *testing.T) {
+func TestGetLastMessage_Empty(t *testing.T) {
 	truncateAll(t)
 	humanID := createTestUser(t, "msg_human3", "Human")
 
 	room, err := testRepo.CreateRoom(context.Background(), humanID)
 	require.NoError(t, err)
 
-	msgs, err := testRepo.GetLastMessages(context.Background(), room.ID, 10)
-	require.NoError(t, err)
-	assert.Empty(t, msgs)
+	_, err = testRepo.GetLastMessage(context.Background(), room.ID)
+	assert.ErrorIs(t, err, domain.ErrNoMessages)
 }

@@ -53,7 +53,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 						return m.SenderID == userID &&
 							m.SenderRole == domain.Human &&
 							m.RoomID == roomID
-					}), domain.EventNewQuestion, uuid.Nil).
+					}), domain.EventNewQuestion, uuid.Nil, uuid.Nil).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: userID, SenderRole: domain.Human,
 						RoomID: roomID, Content: "What is the best way to learn Go?",
@@ -94,7 +94,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 					CreateRoom(mock.Anything, mock.Anything).
 					Return(&domain.Room{ID: roomID}, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventNewQuestion, uuid.Nil).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventNewQuestion, uuid.Nil, uuid.Nil).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,
@@ -115,7 +115,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 							m.Tags[0] == "api" &&
 							m.Tags[1] == "backend" &&
 							m.Tags[2] == "go"
-					}), domain.EventNewQuestion, uuid.Nil).
+					}), domain.EventNewQuestion, uuid.Nil, uuid.Nil).
 					Return(&domain.Message{}, nil)
 			},
 		},
@@ -148,10 +148,11 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 
 func TestSendMessage_Human_FollowUp(t *testing.T) {
 	userID := uuid.Must(uuid.NewV7())
+	aiID := uuid.Must(uuid.NewV7())
 	roomID := uuid.Must(uuid.NewV7())
 	otherUserID := uuid.Must(uuid.NewV7())
 
-	activeRoom := &domain.Room{ID: roomID, HumanID: userID, Status: domain.RoomActive}
+	activeRoom := &domain.Room{ID: roomID, HumanID: userID, AIID: &aiID, Status: domain.RoomActive}
 
 	tests := []struct {
 		name    string
@@ -170,7 +171,7 @@ func TestSendMessage_Human_FollowUp(t *testing.T) {
 				repo.EXPECT().
 					SaveWithOutbox(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 						return m.SenderID == userID && m.RoomID == roomID && m.SenderRole == domain.Human
-					}), domain.EventFollowUp, uuid.Nil).
+					}), domain.EventHumanFollowUp, uuid.Nil, aiID).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: userID,
 						SenderRole: domain.Human, RoomID: roomID, Content: "follow up",
@@ -222,7 +223,7 @@ func TestSendMessage_Human_FollowUp(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventFollowUp, uuid.Nil).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventHumanFollowUp, uuid.Nil, aiID).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,
@@ -263,8 +264,8 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 	activeRoom := &domain.Room{
 		ID: roomID, HumanID: humanID, AIID: &aiID, Status: domain.RoomActive,
 	}
-	humanLastMsg := []*domain.Message{{SenderRole: domain.Human}}
-	aiLastMsg := []*domain.Message{{SenderRole: domain.AI}}
+	humanLastMsg := &domain.Message{SenderRole: domain.Human}
+	aiLastMsg := &domain.Message{SenderRole: domain.AI}
 
 	tests := []struct {
 		name    string
@@ -281,12 +282,12 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					GetLastMessages(mock.Anything, roomID, domain.AISequentialMessageLimit).
+					GetLastMessage(mock.Anything, roomID).
 					Return(humanLastMsg, nil)
 				repo.EXPECT().
 					SaveWithOutbox(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 						return m.SenderID == aiID && m.SenderRole == domain.AI && m.RoomID == roomID
-					}), domain.EventAIReply, humanID).
+					}), domain.EventAIReply, humanID, uuid.Nil).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: aiID,
 						SenderRole: domain.AI, RoomID: roomID, Content: "Here is the answer",
@@ -356,8 +357,8 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					GetLastMessages(mock.Anything, roomID, domain.AISequentialMessageLimit).
-					Return([]*domain.Message{}, nil)
+					GetLastMessage(mock.Anything, roomID).
+					Return(nil, domain.ErrNoMessages)
 			},
 			wantErr: domain.ErrAICannotStart,
 		},
@@ -369,20 +370,20 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					GetLastMessages(mock.Anything, roomID, domain.AISequentialMessageLimit).
+					GetLastMessage(mock.Anything, roomID).
 					Return(aiLastMsg, nil)
 			},
 			wantErr: domain.ErrAIDoublePost,
 		},
 		{
-			name: "get last messages error",
+			name: "get last message error",
 			req: msg.CreateMessageReq{
 				UserID: aiID, Role: domain.AI, Content: "answer", RoomID: roomID,
 			},
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					GetLastMessages(mock.Anything, roomID, domain.AISequentialMessageLimit).
+					GetLastMessage(mock.Anything, roomID).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,
@@ -395,10 +396,10 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					GetLastMessages(mock.Anything, roomID, domain.AISequentialMessageLimit).
+					GetLastMessage(mock.Anything, roomID).
 					Return(humanLastMsg, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventAIReply, mock.Anything).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventAIReply, mock.Anything, uuid.Nil).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,

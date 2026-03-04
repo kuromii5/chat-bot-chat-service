@@ -89,7 +89,7 @@ func (r *Relay) process(ctx context.Context) {
 
 func (r *Relay) dispatch(ctx context.Context, event *domain.OutboxEvent) error {
 	switch event.EventType {
-	case domain.EventNewQuestion, domain.EventFollowUp, domain.EventAIReply:
+	case domain.EventNewQuestion, domain.EventHumanFollowUp, domain.EventAIReply:
 		return r.dispatchMessage(ctx, event)
 	case domain.EventTagsSync:
 		return r.dispatchTagSync(ctx, event)
@@ -112,10 +112,19 @@ func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) 
 			return fmt.Errorf("PublishNewQuestion: %w", err)
 		}
 		return nil
-	case domain.EventFollowUp:
+	case domain.EventHumanFollowUp:
 		if err := r.publisher.PublishFollowUp(ctx, payload.Message.RoomID, payload.Message); err != nil {
 			return fmt.Errorf("PublishFollowUp: %w", err)
 		}
+		r.notifyKafka(ctx, kafkaadapter.NotificationEvent{
+			ID:          event.ID,
+			Type:        event.EventType,
+			RecipientID: payload.AIID,
+			RoomID:      payload.Message.RoomID,
+			SenderID:    payload.Message.SenderID,
+			Text:        payload.Message.Content,
+			OccurredAt:  payload.Message.CreatedAt,
+		})
 		return nil
 	case domain.EventAIReply:
 		if err := r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message); err != nil {

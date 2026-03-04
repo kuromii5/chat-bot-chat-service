@@ -14,8 +14,8 @@ import (
 // postgresRepo is the union of all repo interfaces defined in the service layer.
 // Repo satisfies them all via duck typing — no service package imports needed.
 type postgresRepo interface {
-	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
-	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error)
+	GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error)
 	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error
 	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
 	CreateRoom(ctx context.Context, humanID uuid.UUID) (*domain.Room, error)
@@ -39,7 +39,7 @@ func NewRepo(inner postgresRepo) *Repo {
 	return &Repo{inner: inner}
 }
 
-func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error) {
+func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error) {
 	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.SaveWithOutbox")
 	defer span.End()
 	span.SetAttributes(
@@ -49,7 +49,7 @@ func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventTyp
 		attribute.String("event.type", string(eventType)),
 	)
 
-	result, err := r.inner.SaveWithOutbox(ctx, msg, eventType, humanID)
+	result, err := r.inner.SaveWithOutbox(ctx, msg, eventType, humanID, aiID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -57,17 +57,16 @@ func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventTyp
 	return result, err
 }
 
-func (r *Repo) GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error) {
-	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.GetLastMessages")
+func (r *Repo) GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error) {
+	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.GetLastMessage")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("db.operation", "SELECT"),
 		attribute.String("db.table", "core.messages"),
 		attribute.String("room.id", roomID.String()),
-		attribute.Int("limit", limit),
 	)
 
-	result, err := r.inner.GetLastMessages(ctx, roomID, limit)
+	result, err := r.inner.GetLastMessage(ctx, roomID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

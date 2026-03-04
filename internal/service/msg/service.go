@@ -11,8 +11,8 @@ import (
 )
 
 type MessageRepo interface {
-	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error)
-	GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error)
+	GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error)
 }
 
 type RoomRepo interface {

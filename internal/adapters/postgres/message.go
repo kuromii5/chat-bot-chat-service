@@ -13,7 +13,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
-func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error) {
+func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error) {
 	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("tx begin: %w", err)
@@ -39,6 +39,7 @@ func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eve
 	payload, err := json.Marshal(domain.MessagePayload{
 		Message: &message,
 		HumanID: humanID,
+		AIID:    aiID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("payload marshal: %w", err)
@@ -60,15 +61,14 @@ func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eve
 	return &message, nil
 }
 
-func (pg *postgres) GetLastMessages(
-	ctx context.Context,
-	roomID uuid.UUID,
-	limit int,
-) ([]*domain.Message, error) {
-	var messages []*domain.Message
-	err := pg.DB.SelectContext(ctx, &messages, getLastMessagesQuery, roomID, limit)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("get last messages: %w", err)
+func (pg *postgres) GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error) {
+	var message domain.Message
+	err := pg.DB.GetContext(ctx, &message, getLastMessageQuery, roomID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain.ErrNoMessages
 	}
-	return messages, nil
+	if err != nil {
+		return nil, fmt.Errorf("get last message: %w", err)
+	}
+	return &message, nil
 }

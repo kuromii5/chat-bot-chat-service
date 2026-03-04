@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -24,7 +25,7 @@ func (s *Service) SendMessage(ctx context.Context, req CreateMessageReq) (*domai
 	case domain.Human:
 		return s.sendHumanMessage(ctx, req)
 	case domain.AI:
-		return s.sendAIMessage(ctx, req)
+		return s.sendAIReply(ctx, req)
 	default:
 		return nil, domain.ErrAccessDenied
 	}
@@ -55,7 +56,7 @@ func (s *Service) sendHumanNewQuestion(ctx context.Context, req CreateMessageReq
 		RoomID:     room.ID,
 		Content:    req.Content,
 		Tags:       req.Tags,
-	}, domain.EventNewQuestion, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
@@ -81,7 +82,7 @@ func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	}, domain.EventFollowUp, uuid.Nil)
+	}, domain.EventHumanFollowUp, uuid.Nil, *room.AIID)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
@@ -89,7 +90,7 @@ func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (
 	return saved, nil
 }
 
-func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
+func (s *Service) sendAIReply(ctx context.Context, req CreateMessageReq) (*domain.Message, error) {
 	if req.RoomID == (uuid.UUID{}) {
 		return nil, domain.ErrRoomRequired
 	}
@@ -105,12 +106,15 @@ func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*dom
 		return nil, domain.ErrNotRoomParticipant
 	}
 
-	lastMsgs, err := s.repo.GetLastMessages(ctx, req.RoomID, domain.AISequentialMessageLimit)
-	if err != nil {
-		return nil, fmt.Errorf("get last messages: %w", err)
+	last, err := s.repo.GetLastMessage(ctx, req.RoomID)
+	if errors.Is(err, domain.ErrNoMessages) {
+		return nil, domain.ErrAICannotStart
 	}
-	if err := domain.ValidateAIMsg(lastMsgs); err != nil {
-		return nil, fmt.Errorf("validate AI msg: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("get last message: %w", err)
+	}
+	if last.SenderRole == domain.AI {
+		return nil, domain.ErrAIDoublePost
 	}
 
 	saved, err := s.repo.SaveWithOutbox(ctx, &domain.Message{
@@ -119,7 +123,7 @@ func (s *Service) sendAIMessage(ctx context.Context, req CreateMessageReq) (*dom
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	}, domain.EventAIReply, room.HumanID)
+	}, domain.EventAIReply, room.HumanID, uuid.Nil)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}

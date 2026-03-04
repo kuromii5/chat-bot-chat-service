@@ -11,7 +11,7 @@ type EventType string
 
 const (
 	EventNewQuestion EventType = "new_question"
-	EventFollowUp    EventType = "follow_up"
+	EventHumanFollowUp EventType = "human_follow_up"
 	EventAIReply     EventType = "ai_reply"
 	EventTagsSync    EventType = "tags_sync"
 	EventRoomClaimed EventType = "room_claimed"
@@ -29,6 +29,7 @@ const (
 type MessagePayload struct {
 	Message *Message  `json:"message"`
 	HumanID uuid.UUID `json:"human_id"`
+	AIID    uuid.UUID `json:"ai_id"`
 }
 
 type TagSyncPayload struct {
