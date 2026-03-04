@@ -23,4 +23,3 @@ type Message struct {
 	Tags       pq.StringArray `db:"tags"`
 	CreatedAt  time.Time      `db:"created_at"`
 }
-

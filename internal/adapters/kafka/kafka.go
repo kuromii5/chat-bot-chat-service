@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"fmt"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -19,5 +21,8 @@ func NewProducer(brokers []string) *Producer {
 }
 
 func (p *Producer) Close() error {
-	return p.writer.Close()
+	if err := p.writer.Close(); err != nil {
+		return fmt.Errorf("close kafka producer: %w", err)
+	}
+	return nil
 }

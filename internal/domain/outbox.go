@@ -10,11 +10,11 @@ import (
 type EventType string
 
 const (
-	EventNewQuestion EventType = "new_question"
+	EventNewQuestion   EventType = "new_question"
 	EventHumanFollowUp EventType = "human_follow_up"
-	EventAIReply     EventType = "ai_reply"
-	EventTagsSync    EventType = "tags_sync"
-	EventRoomClaimed EventType = "room_claimed"
+	EventAIReply       EventType = "ai_reply"
+	EventTagsSync      EventType = "tags_sync"
+	EventRoomClaimed   EventType = "room_claimed"
 )
 
 type EventStatus string
