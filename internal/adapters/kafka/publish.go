@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	kafka "github.com/segmentio/kafka-go"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
