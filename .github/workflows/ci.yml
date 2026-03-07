@@ -49,7 +49,7 @@ jobs:
           go-version: "1.26"
 
       - name: Clone migrations
-        run: git clone https://github.com/kuromii5/chat-bot-migrations.git ../chat-bot-migrations
+        run: git clone https://github.com/kuromii5/chat-bot-migrations.git ../migrations
 
       - name: Run integration tests
         run: go test ./tests/integration/ -tags=integration -v -count=1
