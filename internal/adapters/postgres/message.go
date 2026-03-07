@@ -13,7 +13,7 @@ import (
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
 
-func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error) {
+func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error) {
 	tx, err := pg.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("tx begin: %w", err)
@@ -37,9 +37,8 @@ func (pg *postgres) SaveWithOutbox(ctx context.Context, msg *domain.Message, eve
 	}
 
 	payload, err := json.Marshal(domain.MessagePayload{
-		Message: &message,
-		HumanID: humanID,
-		AIID:    aiID,
+		Message:     &message,
+		RecipientID: recipientID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("payload marshal: %w", err)

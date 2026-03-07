@@ -14,7 +14,7 @@ import (
 )
 
 type messageRepo interface {
-	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error)
 	GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error)
 }
 
@@ -31,7 +31,7 @@ func TestSaveWithOutbox_Success(t *testing.T) {
 		RoomID:     room.ID,
 		Content:    "Hello, world!",
 		Tags:       []string{"backend", "frontend"},
-	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil)
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, saved.ID)
@@ -61,19 +61,19 @@ func TestGetLastMessage_Success(t *testing.T) {
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: humanID, SenderRole: domain.Human, RoomID: room.ID,
 		Content: "first", Tags: []string{"backend"},
-	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil)
 	require.NoError(t, err)
 
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: aiID, SenderRole: domain.AI, RoomID: room.ID,
 		Content: "second", Tags: []string{},
-	}, domain.EventAIReply, humanID, uuid.Nil)
+	}, domain.EventAIReply, humanID)
 	require.NoError(t, err)
 
 	_, err = testRepo.SaveWithOutbox(context.Background(), &domain.Message{
 		SenderID: humanID, SenderRole: domain.Human, RoomID: room.ID,
 		Content: "third", Tags: []string{},
-	}, domain.EventHumanFollowUp, uuid.Nil, aiID)
+	}, domain.EventHumanFollowUp, aiID)
 	require.NoError(t, err)
 
 	msg, err := testRepo.GetLastMessage(context.Background(), room.ID)

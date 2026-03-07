@@ -83,9 +83,9 @@ func (_c *MockMessageRepo_GetLastMessage_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
-// SaveWithOutbox provides a mock function with given fields: ctx, _a1, eventType, humanID, aiID
-func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID, aiID uuid.UUID) (*domain.Message, error) {
-	ret := _m.Called(ctx, _a1, eventType, humanID, aiID)
+// SaveWithOutbox provides a mock function with given fields: ctx, _a1, eventType, recipientID
+func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error) {
+	ret := _m.Called(ctx, _a1, eventType, recipientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveWithOutbox")
@@ -93,19 +93,19 @@ func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Messa
 
 	var r0 *domain.Message
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID, uuid.UUID) (*domain.Message, error)); ok {
-		return rf(ctx, _a1, eventType, humanID, aiID)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) (*domain.Message, error)); ok {
+		return rf(ctx, _a1, eventType, recipientID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID, uuid.UUID) *domain.Message); ok {
-		r0 = rf(ctx, _a1, eventType, humanID, aiID)
+	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) *domain.Message); ok {
+		r0 = rf(ctx, _a1, eventType, recipientID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Message)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID, uuid.UUID) error); ok {
-		r1 = rf(ctx, _a1, eventType, humanID, aiID)
+	if rf, ok := ret.Get(1).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) error); ok {
+		r1 = rf(ctx, _a1, eventType, recipientID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -122,15 +122,14 @@ type MockMessageRepo_SaveWithOutbox_Call struct {
 //   - ctx context.Context
 //   - _a1 *domain.Message
 //   - eventType domain.EventType
-//   - humanID uuid.UUID
-//   - aiID uuid.UUID
-func (_e *MockMessageRepo_Expecter) SaveWithOutbox(ctx interface{}, _a1 interface{}, eventType interface{}, humanID interface{}, aiID interface{}) *MockMessageRepo_SaveWithOutbox_Call {
-	return &MockMessageRepo_SaveWithOutbox_Call{Call: _e.mock.On("SaveWithOutbox", ctx, _a1, eventType, humanID, aiID)}
+//   - recipientID uuid.UUID
+func (_e *MockMessageRepo_Expecter) SaveWithOutbox(ctx interface{}, _a1 interface{}, eventType interface{}, recipientID interface{}) *MockMessageRepo_SaveWithOutbox_Call {
+	return &MockMessageRepo_SaveWithOutbox_Call{Call: _e.mock.On("SaveWithOutbox", ctx, _a1, eventType, recipientID)}
 }
 
-func (_c *MockMessageRepo_SaveWithOutbox_Call) Run(run func(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID, aiID uuid.UUID)) *MockMessageRepo_SaveWithOutbox_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) Run(run func(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, recipientID uuid.UUID)) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*domain.Message), args[2].(domain.EventType), args[3].(uuid.UUID), args[4].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(*domain.Message), args[2].(domain.EventType), args[3].(uuid.UUID))
 	})
 	return _c
 }
@@ -140,7 +139,7 @@ func (_c *MockMessageRepo_SaveWithOutbox_Call) Return(_a0 *domain.Message, _a1 e
 	return _c
 }
 
-func (_c *MockMessageRepo_SaveWithOutbox_Call) RunAndReturn(run func(context.Context, *domain.Message, domain.EventType, uuid.UUID, uuid.UUID) (*domain.Message, error)) *MockMessageRepo_SaveWithOutbox_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) RunAndReturn(run func(context.Context, *domain.Message, domain.EventType, uuid.UUID) (*domain.Message, error)) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Return(run)
 	return _c
 }

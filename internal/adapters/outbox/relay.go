@@ -119,7 +119,7 @@ func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) 
 		r.notifyKafka(ctx, kafkaadapter.NotificationEvent{
 			ID:          event.ID,
 			Type:        event.EventType,
-			RecipientID: payload.AIID,
+			RecipientID: payload.RecipientID,
 			RoomID:      payload.Message.RoomID,
 			SenderID:    payload.Message.SenderID,
 			Text:        payload.Message.Content,
@@ -127,13 +127,13 @@ func (r *Relay) dispatchMessage(ctx context.Context, event *domain.OutboxEvent) 
 		})
 		return nil
 	case domain.EventAIReply:
-		if err := r.publisher.PublishAIReply(ctx, payload.HumanID, payload.Message); err != nil {
+		if err := r.publisher.PublishAIReply(ctx, payload.RecipientID, payload.Message); err != nil {
 			return fmt.Errorf("PublishAIReply: %w", err)
 		}
 		r.notifyKafka(ctx, kafkaadapter.NotificationEvent{
 			ID:          event.ID,
 			Type:        event.EventType,
-			RecipientID: payload.HumanID,
+			RecipientID: payload.RecipientID,
 			RoomID:      payload.Message.RoomID,
 			SenderID:    payload.Message.SenderID,
 			Text:        payload.Message.Content,

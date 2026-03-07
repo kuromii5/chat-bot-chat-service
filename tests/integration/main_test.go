@@ -162,7 +162,7 @@ func applyMigrations(_ context.Context, db *sqlx.DB) error {
 		}
 	}
 
-	migrationsDir := filepath.Join("..", "..", "..", "chat-bot-migrations", "migrations")
+	migrationsDir := filepath.Join("..", "..", "..", "migrations", "migrations")
 	files := []string{
 		"003_create_auth_users_table.sql",
 		"005_create_core_profiles_table.sql",

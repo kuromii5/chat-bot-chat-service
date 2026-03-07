@@ -27,9 +27,8 @@ const (
 )
 
 type MessagePayload struct {
-	Message *Message  `json:"message"`
-	HumanID uuid.UUID `json:"human_id"`
-	AIID    uuid.UUID `json:"ai_id"`
+	Message     *Message  `json:"message"`
+	RecipientID uuid.UUID `json:"recipient_id"`
 }
 
 type TagSyncPayload struct {

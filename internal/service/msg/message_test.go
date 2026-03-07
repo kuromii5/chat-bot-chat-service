@@ -53,7 +53,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 						return m.SenderID == userID &&
 							m.SenderRole == domain.Human &&
 							m.RoomID == roomID
-					}), domain.EventNewQuestion, uuid.Nil, uuid.Nil).
+					}), domain.EventNewQuestion, uuid.Nil).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: userID, SenderRole: domain.Human,
 						RoomID: roomID, Content: "What is the best way to learn Go?",
@@ -94,7 +94,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 					CreateRoom(mock.Anything, mock.Anything).
 					Return(&domain.Room{ID: roomID}, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventNewQuestion, uuid.Nil, uuid.Nil).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventNewQuestion, uuid.Nil).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,
@@ -115,7 +115,7 @@ func TestSendMessage_Human_NewQuestion(t *testing.T) {
 							m.Tags[0] == "api" &&
 							m.Tags[1] == "backend" &&
 							m.Tags[2] == "go"
-					}), domain.EventNewQuestion, uuid.Nil, uuid.Nil).
+					}), domain.EventNewQuestion, uuid.Nil).
 					Return(&domain.Message{}, nil)
 			},
 		},
@@ -171,7 +171,7 @@ func TestSendMessage_Human_FollowUp(t *testing.T) {
 				repo.EXPECT().
 					SaveWithOutbox(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 						return m.SenderID == userID && m.RoomID == roomID && m.SenderRole == domain.Human
-					}), domain.EventHumanFollowUp, uuid.Nil, aiID).
+					}), domain.EventHumanFollowUp, aiID).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: userID,
 						SenderRole: domain.Human, RoomID: roomID, Content: "follow up",
@@ -223,7 +223,7 @@ func TestSendMessage_Human_FollowUp(t *testing.T) {
 			setup: func(repo *mocks.MockMessageRepo, roomRepo *mocks.MockRoomRepo) {
 				roomRepo.EXPECT().GetRoom(mock.Anything, roomID).Return(activeRoom, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventHumanFollowUp, uuid.Nil, aiID).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventHumanFollowUp, aiID).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,
@@ -287,7 +287,7 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 				repo.EXPECT().
 					SaveWithOutbox(mock.Anything, mock.MatchedBy(func(m *domain.Message) bool {
 						return m.SenderID == aiID && m.SenderRole == domain.AI && m.RoomID == roomID
-					}), domain.EventAIReply, humanID, uuid.Nil).
+					}), domain.EventAIReply, humanID).
 					Return(&domain.Message{
 						ID: uuid.Must(uuid.NewV7()), SenderID: aiID,
 						SenderRole: domain.AI, RoomID: roomID, Content: "Here is the answer",
@@ -399,7 +399,7 @@ func TestSendMessage_AI_Reply(t *testing.T) {
 					GetLastMessage(mock.Anything, roomID).
 					Return(humanLastMsg, nil)
 				repo.EXPECT().
-					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventAIReply, mock.Anything, uuid.Nil).
+					SaveWithOutbox(mock.Anything, mock.Anything, domain.EventAIReply, mock.Anything).
 					Return(nil, errDB)
 			},
 			wantErr: errDB,

@@ -56,7 +56,7 @@ func (s *Service) sendHumanNewQuestion(ctx context.Context, req CreateMessageReq
 		RoomID:     room.ID,
 		Content:    req.Content,
 		Tags:       req.Tags,
-	}, domain.EventNewQuestion, uuid.Nil, uuid.Nil)
+	}, domain.EventNewQuestion, uuid.Nil)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *Service) sendHumanFollowUp(ctx context.Context, req CreateMessageReq) (
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	}, domain.EventHumanFollowUp, uuid.Nil, *room.AIID)
+	}, domain.EventHumanFollowUp, *room.AIID)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}
@@ -123,7 +123,7 @@ func (s *Service) sendAIReply(ctx context.Context, req CreateMessageReq) (*domai
 		RoomID:     req.RoomID,
 		Content:    req.Content,
 		Tags:       pq.StringArray{},
-	}, domain.EventAIReply, room.HumanID, uuid.Nil)
+	}, domain.EventAIReply, room.HumanID)
 	if err != nil {
 		return nil, fmt.Errorf("save message: %w", err)
 	}

@@ -14,7 +14,7 @@ import (
 // postgresRepo is the union of all repo interfaces defined in the service layer.
 // Repo satisfies them all via duck typing — no service package imports needed.
 type postgresRepo interface {
-	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error)
+	SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error)
 	GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error)
 	UpdateProfileTags(ctx context.Context, userID uuid.UUID, tags []string) error
 	GetProfileTags(ctx context.Context, userID uuid.UUID) ([]string, error)
@@ -39,7 +39,7 @@ func NewRepo(inner postgresRepo) *Repo {
 	return &Repo{inner: inner}
 }
 
-func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, humanID, aiID uuid.UUID) (*domain.Message, error) {
+func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error) {
 	ctx, span := otel.Tracer(dbTracer).Start(ctx, "postgres.SaveWithOutbox")
 	defer span.End()
 	span.SetAttributes(
@@ -47,9 +47,10 @@ func (r *Repo) SaveWithOutbox(ctx context.Context, msg *domain.Message, eventTyp
 		attribute.String("db.table", "core.messages, core.outbox_events"),
 		attribute.String("user.id", msg.SenderID.String()),
 		attribute.String("event.type", string(eventType)),
+		attribute.String("recipient.id", recipientID.String()),
 	)
 
-	result, err := r.inner.SaveWithOutbox(ctx, msg, eventType, humanID, aiID)
+	result, err := r.inner.SaveWithOutbox(ctx, msg, eventType, recipientID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
