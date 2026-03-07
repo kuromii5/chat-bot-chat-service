@@ -8,9 +8,31 @@ import (
 
 	"github.com/google/uuid"
 	kafka "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel"
 
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
+
+// kafkaHeaderCarrier implements propagation.TextMapCarrier for injecting
+// trace context into Kafka message headers.
+type kafkaHeaderCarrier []kafka.Header
+
+func (c *kafkaHeaderCarrier) Get(_ string) string { return "" }
+
+func (c *kafkaHeaderCarrier) Set(key, value string) {
+	*c = append(*c, kafka.Header{Key: key, Value: []byte(value)})
+}
+
+func (c *kafkaHeaderCarrier) Keys() []string {
+	keys := make([]string, len(*c))
+	for i, h := range *c {
+		keys[i] = h.Key
+	}
+	return keys
+}
+
+var _ propagation.TextMapCarrier = (*kafkaHeaderCarrier)(nil)
 
 // NotificationEvent is the message published to Kafka for the notification-service to consume.
 type NotificationEvent struct {
@@ -29,10 +51,14 @@ func (p *Producer) PublishNotification(ctx context.Context, event NotificationEv
 		return fmt.Errorf("marshal notification event: %w", err)
 	}
 
+	var carrier kafkaHeaderCarrier
+	otel.GetTextMapPropagator().Inject(ctx, &carrier)
+
 	msg := kafka.Message{
-		Topic: NotificationsTopic,
-		Key:   []byte(event.RecipientID.String()),
-		Value: data,
+		Topic:   NotificationsTopic,
+		Key:     []byte(event.RecipientID.String()),
+		Value:   data,
+		Headers: carrier,
 	}
 
 	if err := p.writer.WriteMessages(ctx, msg); err != nil {

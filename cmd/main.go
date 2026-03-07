@@ -89,7 +89,9 @@ func main() {
 
 	tracingBroker := tracingadapter.NewBroker(rmq)
 
-	relay := outboxrelay.NewRelay(tracingPG, tracingBroker, tracingBroker, tracingBroker, kafkaProd, 2*time.Second)
+	tracingKafka := tracingadapter.NewKafkaProd(kafkaProd)
+
+	relay := outboxrelay.NewRelay(tracingPG, tracingBroker, tracingBroker, tracingBroker, tracingKafka, 2*time.Second)
 	go relay.Run(ctx)
 
 	msgSvc := msgservice.NewService(tracingPG, tracingPG)
