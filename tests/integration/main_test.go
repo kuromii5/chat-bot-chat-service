@@ -162,24 +162,28 @@ func applyMigrations(_ context.Context, db *sqlx.DB) error {
 		}
 	}
 
-	migrationsDir := filepath.Join("..", "..", "..", "chat-bot-migrations", "migrations")
-	files := []string{
-		"003_create_auth_users_table.sql",
-		"005_create_core_profiles_table.sql",
-		"006_create_messages_table.sql",
-		"007_create_core_tags.sql",
-		"008_insert_basic_tags.sql",
-		"009_create_outbox_events_table.sql",
+	migrationsDir := filepath.Join("..", "..", "..", "migrations", "migrations")
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("read migrations dir: %w", err)
 	}
 
-	for _, f := range files {
-		path := filepath.Join(migrationsDir, f)
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".sql" {
+			continue
+		}
+		// skip 001 and 002 — handled above
+		if entry.Name() < "003" {
+			continue
+		}
+
+		path := filepath.Join(migrationsDir, entry.Name())
 		sql, err := extractUpSQL(path)
 		if err != nil {
-			return fmt.Errorf("extract up sql from %s: %w", f, err)
+			return fmt.Errorf("extract up sql from %s: %w", entry.Name(), err)
 		}
 		if _, err := db.Exec(sql); err != nil {
-			return fmt.Errorf("exec migration %s: %w", f, err)
+			return fmt.Errorf("exec migration %s: %w", entry.Name(), err)
 		}
 	}
 
