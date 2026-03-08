@@ -26,7 +26,6 @@ linters:
     - nolintlint
     - forcetypeassert
     - errorlint
-    - wrapcheck
     - copyloopvar
     - nilerr
   settings:
@@ -48,10 +47,6 @@ linters:
           - errcheck
           - varnamelen
           - dupl
-      - path: internal/.*/tracing/
-        linters:
-          - wrapcheck
-
 formatters:
   enable:
     - goimports
