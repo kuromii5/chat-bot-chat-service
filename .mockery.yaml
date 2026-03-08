@@ -7,6 +7,12 @@ disable-version-string: true
 issue-845-fix: true
 
 packages:
+  github.com/kuromii5/chat-bot-chat-service/internal/adapters/outbox:
+    interfaces:
+      OutboxRepo:
+      Publisher:
+      QueueSyncer:
+      Binder:
   github.com/kuromii5/chat-bot-chat-service/internal/service/msg:
     interfaces:
       MessageRepo:
