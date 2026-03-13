@@ -65,3 +65,28 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+// AuthWS is used for WebSocket connections where browsers cannot set
+// the Authorization header. Reads the token from the ?token= query param.
+func AuthWS(jwtSecret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := r.URL.Query().Get("token")
+			if token == "" {
+				wrapper.WrapError(w, r, domain.ErrAuthorizationHeaderRequired)
+				return
+			}
+
+			claims, err := jwt.Verify(token, jwtSecret)
+			if err != nil {
+				wrapper.WrapError(w, r, domain.ErrInvalidOrExpiredToken)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, UserRoleKey, domain.Role(claims.Role))
+			ctx = context.WithValue(ctx, TokenExpiryKey, claims.ExpiresAt.Time)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}

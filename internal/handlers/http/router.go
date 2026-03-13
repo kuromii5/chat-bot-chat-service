@@ -48,13 +48,13 @@ func NewRouter(
 	)
 
 	r.Route("/api/v1/chat", func(r chi.Router) {
-		r.Use(httpMiddleware.Auth(jwtSecret))
-
-		// Long-lived — no timeout
-		r.Get("/ws", wsH.HandleWS)
+		// WebSocket: browsers cannot set Authorization header, so token is read
+		// from the ?token= query param via AuthWS middleware.
+		r.With(httpMiddleware.AuthWS(jwtSecret)).Get("/ws", wsH.HandleWS)
 
 		// Regular HTTP endpoints
 		r.Group(func(r chi.Router) {
+			r.Use(httpMiddleware.Auth(jwtSecret))
 			r.Use(middleware.Timeout(30 * time.Second))
 
 			// Both roles
