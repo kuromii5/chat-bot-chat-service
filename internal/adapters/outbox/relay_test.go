@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/kafka"
 	"github.com/kuromii5/chat-bot-chat-service/internal/adapters/outbox/mocks"
 	"github.com/kuromii5/chat-bot-chat-service/internal/domain"
 )
@@ -27,18 +29,20 @@ func newRelay(t *testing.T) (
 	*mocks.MockPublisher,
 	*mocks.MockQueueSyncer,
 	*mocks.MockBinder,
+	*mocks.MockKafkaNotifier,
 ) {
 	t.Helper()
 	repo := mocks.NewMockOutboxRepo(t)
 	pub := mocks.NewMockPublisher(t)
 	syncer := mocks.NewMockQueueSyncer(t)
 	binder := mocks.NewMockBinder(t)
-	relay := NewRelay(repo, pub, syncer, binder, time.Hour)
-	return relay, repo, pub, syncer, binder
+	notifier := mocks.NewMockKafkaNotifier(t)
+	relay := NewRelay(repo, pub, syncer, binder, notifier, time.Hour)
+	return relay, repo, pub, syncer, binder, notifier
 }
 
 func TestProcess_FetchError(t *testing.T) {
-	relay, repo, _, _, _ := newRelay(t)
+	relay, repo, _, _, _, _ := newRelay(t)
 	ctx := context.Background()
 	// fetch fails — no panic, error is swallowed internally
 	repo.EXPECT().FetchPending(ctx, fetchLimit).Return(nil, errors.New("db error"))
@@ -46,7 +50,7 @@ func TestProcess_FetchError(t *testing.T) {
 }
 
 func TestProcess_NewQuestion(t *testing.T) {
-	relay, repo, pub, _, _ := newRelay(t)
+	relay, repo, pub, _, _, _ := newRelay(t)
 	ctx := context.Background()
 
 	msg := &domain.Message{ID: uuid.New(), RoomID: uuid.New()}
@@ -65,26 +69,29 @@ func TestProcess_NewQuestion(t *testing.T) {
 }
 
 func TestProcess_FollowUp(t *testing.T) {
-	relay, repo, pub, _, _ := newRelay(t)
+	relay, repo, pub, _, _, notifier := newRelay(t)
 	ctx := context.Background()
 
 	msg := &domain.Message{ID: uuid.New(), RoomID: uuid.New()}
 	eventID := uuid.New()
 	event := &domain.OutboxEvent{
 		ID:        eventID,
-		EventType: domain.EventFollowUp,
+		EventType: domain.EventHumanFollowUp,
 		Payload:   mustMarshal(t, domain.MessagePayload{Message: msg}),
 	}
 
 	repo.EXPECT().FetchPending(ctx, fetchLimit).Return([]*domain.OutboxEvent{event}, nil)
 	pub.EXPECT().PublishFollowUp(ctx, msg.RoomID, msg).Return(nil)
+	notifier.EXPECT().PublishNotification(ctx, mock.MatchedBy(func(e kafka.NotificationEvent) bool {
+		return e.Type == "human_follow_up" && e.RoomID == msg.RoomID
+	})).Return(nil)
 	repo.EXPECT().MarkPublished(ctx, eventID).Return(nil)
 
 	relay.process(ctx)
 }
 
 func TestProcess_AIReply(t *testing.T) {
-	relay, repo, pub, _, _ := newRelay(t)
+	relay, repo, pub, _, _, notifier := newRelay(t)
 	ctx := context.Background()
 
 	humanID := uuid.New()
@@ -93,18 +100,44 @@ func TestProcess_AIReply(t *testing.T) {
 	event := &domain.OutboxEvent{
 		ID:        eventID,
 		EventType: domain.EventAIReply,
-		Payload:   mustMarshal(t, domain.MessagePayload{Message: msg, HumanID: humanID}),
+		Payload:   mustMarshal(t, domain.MessagePayload{Message: msg, RecipientID: humanID}),
 	}
 
 	repo.EXPECT().FetchPending(ctx, fetchLimit).Return([]*domain.OutboxEvent{event}, nil)
 	pub.EXPECT().PublishAIReply(ctx, humanID, msg).Return(nil)
+	notifier.EXPECT().PublishNotification(ctx, mock.MatchedBy(func(e kafka.NotificationEvent) bool {
+		return e.Type == "ai_reply" && e.RecipientID == humanID
+	})).Return(nil)
+	repo.EXPECT().MarkPublished(ctx, eventID).Return(nil)
+
+	relay.process(ctx)
+}
+
+func TestProcess_RoomClaimed(t *testing.T) {
+	relay, repo, _, _, binder, notifier := newRelay(t)
+	ctx := context.Background()
+
+	roomID := uuid.New()
+	aiID := uuid.New()
+	eventID := uuid.New()
+	event := &domain.OutboxEvent{
+		ID:        eventID,
+		EventType: domain.EventRoomClaimed,
+		Payload:   mustMarshal(t, domain.RoomClaimedPayload{RoomID: roomID, AiID: aiID}),
+	}
+
+	repo.EXPECT().FetchPending(ctx, fetchLimit).Return([]*domain.OutboxEvent{event}, nil)
+	binder.EXPECT().BindRoomToAI(ctx, roomID, aiID).Return(nil)
+	notifier.EXPECT().PublishNotification(ctx, mock.MatchedBy(func(e kafka.NotificationEvent) bool {
+		return e.Type == "room_claimed" && e.RoomID == roomID
+	})).Return(nil)
 	repo.EXPECT().MarkPublished(ctx, eventID).Return(nil)
 
 	relay.process(ctx)
 }
 
 func TestProcess_TagsSync(t *testing.T) {
-	relay, repo, _, syncer, _ := newRelay(t)
+	relay, repo, _, syncer, _, _ := newRelay(t)
 	ctx := context.Background()
 
 	userID := uuid.New()
@@ -124,28 +157,8 @@ func TestProcess_TagsSync(t *testing.T) {
 	relay.process(ctx)
 }
 
-func TestProcess_RoomClaimed(t *testing.T) {
-	relay, repo, _, _, binder := newRelay(t)
-	ctx := context.Background()
-
-	roomID := uuid.New()
-	aiID := uuid.New()
-	eventID := uuid.New()
-	event := &domain.OutboxEvent{
-		ID:        eventID,
-		EventType: domain.EventRoomClaimed,
-		Payload:   mustMarshal(t, domain.RoomClaimedPayload{RoomID: roomID, AiID: aiID}),
-	}
-
-	repo.EXPECT().FetchPending(ctx, fetchLimit).Return([]*domain.OutboxEvent{event}, nil)
-	binder.EXPECT().BindRoomToAI(ctx, roomID, aiID).Return(nil)
-	repo.EXPECT().MarkPublished(ctx, eventID).Return(nil)
-
-	relay.process(ctx)
-}
-
 func TestProcess_DispatchError_MarksAsFailed(t *testing.T) {
-	relay, repo, pub, _, _ := newRelay(t)
+	relay, repo, pub, _, _, _ := newRelay(t)
 	ctx := context.Background()
 
 	msg := &domain.Message{ID: uuid.New(), RoomID: uuid.New()}
@@ -164,7 +177,7 @@ func TestProcess_DispatchError_MarksAsFailed(t *testing.T) {
 }
 
 func TestProcess_UnknownEventType_MarksAsFailed(t *testing.T) {
-	relay, repo, _, _, _ := newRelay(t)
+	relay, repo, _, _, _, _ := newRelay(t)
 	ctx := context.Background()
 
 	eventID := uuid.New()
@@ -181,7 +194,7 @@ func TestProcess_UnknownEventType_MarksAsFailed(t *testing.T) {
 }
 
 func TestProcess_MultipleEvents(t *testing.T) {
-	relay, repo, pub, _, _ := newRelay(t)
+	relay, repo, pub, _, _, _ := newRelay(t)
 	ctx := context.Background()
 
 	msg1 := &domain.Message{ID: uuid.New(), RoomID: uuid.New()}
