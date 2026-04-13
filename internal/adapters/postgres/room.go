@@ -27,8 +27,11 @@ func (pg *postgres) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.U
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var id uuid.UUID
-	if err := tx.GetContext(ctx, &id, claimRoomQuery, aiID, roomID); err != nil {
+	var row struct {
+		ID      uuid.UUID `db:"id"`
+		HumanID uuid.UUID `db:"human_id"`
+	}
+	if err := tx.GetContext(ctx, &row, claimRoomQuery, aiID, roomID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.ErrRoomAlreadyClaimed
 		}
@@ -36,8 +39,9 @@ func (pg *postgres) ClaimRoom(ctx context.Context, roomID uuid.UUID, aiID uuid.U
 	}
 
 	payload, err := json.Marshal(domain.RoomClaimedPayload{
-		RoomID: roomID,
-		AiID:   aiID,
+		RoomID:  roomID,
+		AiID:    aiID,
+		HumanID: row.HumanID,
 	})
 	if err != nil {
 		return fmt.Errorf("marshal room claimed payload: %w", err)

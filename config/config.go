@@ -12,6 +12,7 @@ type Config struct {
 	JWT      JWTConfig
 	Log      LogConfig
 	RabbitMQ RabbitMQConfig
+	Kafka    KafkaConfig
 	Metrics  MetricsConfig
 	Tracing  TracingConfig
 }
@@ -52,6 +53,10 @@ type RabbitMQConfig struct {
 	Exchange string
 }
 
+type KafkaConfig struct {
+	Brokers []string
+}
+
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
@@ -79,6 +84,9 @@ func Load() (*Config, error) {
 		RabbitMQ: RabbitMQConfig{
 			URL:      viper.GetString("RABBITMQ_URL"),
 			Exchange: viper.GetString("RABBITMQ_EXCHANGE"),
+		},
+		Kafka: KafkaConfig{
+			Brokers: viper.GetStringSlice("KAFKA_BROKERS"),
 		},
 		Metrics: MetricsConfig{
 			Port: viper.GetString("METRICS_PORT"),

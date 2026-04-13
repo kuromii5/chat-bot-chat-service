@@ -163,21 +163,17 @@ func applyMigrations(_ context.Context, db *sqlx.DB) error {
 	}
 
 	migrationsDir := filepath.Join("..", "..", "..", "migrations", "migrations")
-	entries, err := os.ReadDir(migrationsDir)
-	if err != nil {
-		return fmt.Errorf("read migrations dir: %w", err)
+	files := []string{
+		"003_create_auth_users_table.sql",
+		"005_create_core_profiles_table.sql",
+		"006_create_messages_table.sql",
+		"007_create_core_tags.sql",
+		"008_insert_basic_tags.sql",
+		"009_create_outbox_events_table.sql",
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".sql" {
-			continue
-		}
-		// skip 001 and 002 — handled above
-		if entry.Name() < "003" {
-			continue
-		}
-
-		path := filepath.Join(migrationsDir, entry.Name())
+	for _, f := range files {
+		path := filepath.Join(migrationsDir, f)
 		sql, err := extractUpSQL(path)
 		if err != nil {
 			return fmt.Errorf("extract up sql from %s: %w", entry.Name(), err)

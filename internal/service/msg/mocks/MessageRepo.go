@@ -24,29 +24,29 @@ func (_m *MockMessageRepo) EXPECT() *MockMessageRepo_Expecter {
 	return &MockMessageRepo_Expecter{mock: &_m.Mock}
 }
 
-// GetLastMessages provides a mock function with given fields: ctx, roomID, limit
-func (_m *MockMessageRepo) GetLastMessages(ctx context.Context, roomID uuid.UUID, limit int) ([]*domain.Message, error) {
-	ret := _m.Called(ctx, roomID, limit)
+// GetLastMessage provides a mock function with given fields: ctx, roomID
+func (_m *MockMessageRepo) GetLastMessage(ctx context.Context, roomID uuid.UUID) (*domain.Message, error) {
+	ret := _m.Called(ctx, roomID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetLastMessages")
+		panic("no return value specified for GetLastMessage")
 	}
 
-	var r0 []*domain.Message
+	var r0 *domain.Message
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int) ([]*domain.Message, error)); ok {
-		return rf(ctx, roomID, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*domain.Message, error)); ok {
+		return rf(ctx, roomID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int) []*domain.Message); ok {
-		r0 = rf(ctx, roomID, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *domain.Message); ok {
+		r0 = rf(ctx, roomID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*domain.Message)
+			r0 = ret.Get(0).(*domain.Message)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, int) error); ok {
-		r1 = rf(ctx, roomID, limit)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, roomID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -54,39 +54,38 @@ func (_m *MockMessageRepo) GetLastMessages(ctx context.Context, roomID uuid.UUID
 	return r0, r1
 }
 
-// MockMessageRepo_GetLastMessages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastMessages'
-type MockMessageRepo_GetLastMessages_Call struct {
+// MockMessageRepo_GetLastMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLastMessage'
+type MockMessageRepo_GetLastMessage_Call struct {
 	*mock.Call
 }
 
-// GetLastMessages is a helper method to define mock.On call
+// GetLastMessage is a helper method to define mock.On call
 //   - ctx context.Context
 //   - roomID uuid.UUID
-//   - limit int
-func (_e *MockMessageRepo_Expecter) GetLastMessages(ctx interface{}, roomID interface{}, limit interface{}) *MockMessageRepo_GetLastMessages_Call {
-	return &MockMessageRepo_GetLastMessages_Call{Call: _e.mock.On("GetLastMessages", ctx, roomID, limit)}
+func (_e *MockMessageRepo_Expecter) GetLastMessage(ctx interface{}, roomID interface{}) *MockMessageRepo_GetLastMessage_Call {
+	return &MockMessageRepo_GetLastMessage_Call{Call: _e.mock.On("GetLastMessage", ctx, roomID)}
 }
 
-func (_c *MockMessageRepo_GetLastMessages_Call) Run(run func(ctx context.Context, roomID uuid.UUID, limit int)) *MockMessageRepo_GetLastMessages_Call {
+func (_c *MockMessageRepo_GetLastMessage_Call) Run(run func(ctx context.Context, roomID uuid.UUID)) *MockMessageRepo_GetLastMessage_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(int))
+		run(args[0].(context.Context), args[1].(uuid.UUID))
 	})
 	return _c
 }
 
-func (_c *MockMessageRepo_GetLastMessages_Call) Return(_a0 []*domain.Message, _a1 error) *MockMessageRepo_GetLastMessages_Call {
+func (_c *MockMessageRepo_GetLastMessage_Call) Return(_a0 *domain.Message, _a1 error) *MockMessageRepo_GetLastMessage_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockMessageRepo_GetLastMessages_Call) RunAndReturn(run func(context.Context, uuid.UUID, int) ([]*domain.Message, error)) *MockMessageRepo_GetLastMessages_Call {
+func (_c *MockMessageRepo_GetLastMessage_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*domain.Message, error)) *MockMessageRepo_GetLastMessage_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// SaveWithOutbox provides a mock function with given fields: ctx, _a1, eventType, humanID
-func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID) (*domain.Message, error) {
-	ret := _m.Called(ctx, _a1, eventType, humanID)
+// SaveWithOutbox provides a mock function with given fields: ctx, _a1, eventType, recipientID
+func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, recipientID uuid.UUID) (*domain.Message, error) {
+	ret := _m.Called(ctx, _a1, eventType, recipientID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveWithOutbox")
@@ -95,10 +94,10 @@ func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Messa
 	var r0 *domain.Message
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) (*domain.Message, error)); ok {
-		return rf(ctx, _a1, eventType, humanID)
+		return rf(ctx, _a1, eventType, recipientID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) *domain.Message); ok {
-		r0 = rf(ctx, _a1, eventType, humanID)
+		r0 = rf(ctx, _a1, eventType, recipientID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Message)
@@ -106,7 +105,7 @@ func (_m *MockMessageRepo) SaveWithOutbox(ctx context.Context, _a1 *domain.Messa
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *domain.Message, domain.EventType, uuid.UUID) error); ok {
-		r1 = rf(ctx, _a1, eventType, humanID)
+		r1 = rf(ctx, _a1, eventType, recipientID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -123,12 +122,12 @@ type MockMessageRepo_SaveWithOutbox_Call struct {
 //   - ctx context.Context
 //   - _a1 *domain.Message
 //   - eventType domain.EventType
-//   - humanID uuid.UUID
-func (_e *MockMessageRepo_Expecter) SaveWithOutbox(ctx interface{}, _a1 interface{}, eventType interface{}, humanID interface{}) *MockMessageRepo_SaveWithOutbox_Call {
-	return &MockMessageRepo_SaveWithOutbox_Call{Call: _e.mock.On("SaveWithOutbox", ctx, _a1, eventType, humanID)}
+//   - recipientID uuid.UUID
+func (_e *MockMessageRepo_Expecter) SaveWithOutbox(ctx interface{}, _a1 interface{}, eventType interface{}, recipientID interface{}) *MockMessageRepo_SaveWithOutbox_Call {
+	return &MockMessageRepo_SaveWithOutbox_Call{Call: _e.mock.On("SaveWithOutbox", ctx, _a1, eventType, recipientID)}
 }
 
-func (_c *MockMessageRepo_SaveWithOutbox_Call) Run(run func(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, humanID uuid.UUID)) *MockMessageRepo_SaveWithOutbox_Call {
+func (_c *MockMessageRepo_SaveWithOutbox_Call) Run(run func(ctx context.Context, _a1 *domain.Message, eventType domain.EventType, recipientID uuid.UUID)) *MockMessageRepo_SaveWithOutbox_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(*domain.Message), args[2].(domain.EventType), args[3].(uuid.UUID))
 	})

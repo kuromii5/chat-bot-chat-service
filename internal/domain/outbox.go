@@ -10,11 +10,11 @@ import (
 type EventType string
 
 const (
-	EventNewQuestion EventType = "new_question"
-	EventFollowUp    EventType = "follow_up"
-	EventAIReply     EventType = "ai_reply"
-	EventTagsSync    EventType = "tags_sync"
-	EventRoomClaimed EventType = "room_claimed"
+	EventNewQuestion   EventType = "new_question"
+	EventHumanFollowUp EventType = "human_follow_up"
+	EventAIReply       EventType = "ai_reply"
+	EventTagsSync      EventType = "tags_sync"
+	EventRoomClaimed   EventType = "room_claimed"
 )
 
 type EventStatus string
@@ -27,8 +27,8 @@ const (
 )
 
 type MessagePayload struct {
-	Message *Message  `json:"message"`
-	HumanID uuid.UUID `json:"human_id"`
+	Message     *Message  `json:"message"`
+	RecipientID uuid.UUID `json:"recipient_id"`
 }
 
 type TagSyncPayload struct {
@@ -38,8 +38,9 @@ type TagSyncPayload struct {
 }
 
 type RoomClaimedPayload struct {
-	RoomID uuid.UUID `json:"room_id"`
-	AiID   uuid.UUID `json:"ai_id"`
+	RoomID  uuid.UUID `json:"room_id"`
+	AiID    uuid.UUID `json:"ai_id"`
+	HumanID uuid.UUID `json:"human_id"`
 }
 
 type OutboxEvent struct {

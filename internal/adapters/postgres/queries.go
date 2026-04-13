@@ -7,12 +7,12 @@ const (
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, sender_id, sender_role, room_id, content, tags, created_at;
 	`
-	getLastMessagesQuery = `
+	getLastMessageQuery = `
 		SELECT id, sender_id, sender_role, room_id, content, tags, created_at
 		FROM core.messages
 		WHERE room_id = $1
 		ORDER BY created_at DESC
-		LIMIT $2;
+		LIMIT 1;
 	`
 )
 
@@ -27,7 +27,7 @@ const (
 		UPDATE core.rooms
 		SET ai_id = $1, status = 'active'
 		WHERE id = $2 AND ai_id IS NULL
-		RETURNING id;
+		RETURNING id, human_id;
 	`
 	checkRoomQuery = `
 		SELECT status,
