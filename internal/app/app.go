@@ -36,7 +36,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	var a App
 
 	shutdownTracer, err := tracing.InitTracer(
-		context.Background(),
+		ctx,
 		"chat-service",
 		cfg.Tracing.Endpoint,
 		cfg.Tracing.Sampler,
@@ -46,7 +46,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 	a.closer.Add(shutdownTracer)
 
-	pg, err := postgres.New(cfg.Database)
+	pg, err := postgres.New(cfg.Database) //nolint:contextcheck
 	if err != nil {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
