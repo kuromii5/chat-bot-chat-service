@@ -176,10 +176,10 @@ func applyMigrations(_ context.Context, db *sqlx.DB) error {
 		path := filepath.Join(migrationsDir, f)
 		sql, err := extractUpSQL(path)
 		if err != nil {
-			return fmt.Errorf("extract up sql from %s: %w", f, err)
+			return fmt.Errorf("extract up sql from %s: %w", path, err)
 		}
 		if _, err := db.Exec(sql); err != nil {
-			return fmt.Errorf("exec migration %s: %w", f, err)
+			return fmt.Errorf("exec migration %s: %w", path, err)
 		}
 	}
 
